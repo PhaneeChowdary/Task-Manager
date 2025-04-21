@@ -1,0 +1,185 @@
+{% extends "layout.html" %} {% block title %}Dashboard - Task Management
+System{% endblock %} {% block content %}
+<div class="dashboard-container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Dashboard</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('boards') }}" class="btn btn-primary"
+                >View All Boards</a
+            >
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="stats-card card card-fancy">
+                <h3>{{ total_boards }}</h3>
+                <p>Total Boards</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card card card-fancy">
+                <h3>{{ total_tasks if total_tasks is defined else 0 }}</h3>
+                <p>Total Tasks</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card card card-fancy">
+                <h3>
+                    {{ completed_tasks if completed_tasks is defined else 0 }}
+                </h3>
+                <p>Completed Tasks</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Graph -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card card-fancy">
+                <div class="card-body">
+                    <h5 class="card-title">Activity Overview</h5>
+                    <canvas id="activityChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <h3>Recent Activity</h3>
+    <div id="recent-activity" class="mb-4">
+        {% if activities %} {% for activity in activities %}
+        <div class="card card-fancy mb-2">
+            <div class="d-flex w-100 justify-content-between">
+                <p class="mb-0">{{ activity.description }}</p>
+                <small>{{ activity.timestamp | format_datetime_exact }}</small>
+            </div>
+        </div>
+        {% endfor %} {% else %}
+        <div class="list-group-item text-center text-muted">
+            No recent activity
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Boards -->
+    <div class="row">
+        <div class="col-md-6 mt-2">
+            <h3 class="mb-3"><i class="bi bi-clock"></i> Your Recent Boards</h3>
+            {% if user_boards %} {% for board in user_boards[:5] %}
+            <div class="card card-fancy mb-2">
+                <a
+                    href="{{ url_for('board', board_id=board.id) }}"
+                    class="list-group-item list-group-item-action"
+                >
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ board.name }}</h5>
+                        <small
+                            >{{ board.createdAt | format_datetime_exact
+                            }}</small
+                        >
+                    </div>
+                </a>
+            </div>
+            {% endfor %} {% else %}
+            <p>You haven't created any boards yet.</p>
+            <a href="{{ url_for('boards') }}" class="btn btn-primary"
+                >Create your first board</a
+            >
+            {% endif %}
+        </div>
+        <div class="col-md-6 mt-2">
+            <h3 class="mb-3"><i class="bi bi-people"></i> Shared With You</h3>
+            {% if shared_boards %} {% for board in shared_boards %}
+            <div class="card card-fancy mb-2">
+                <a
+                    href="{{ url_for('board', board_id=board.id) }}"
+                    class="list-group-item list-group-item-action"
+                >
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ board.name }}</h5>
+                        <small>Owner: {{ board.creatorName }}</small>
+                    </div>
+                    <small>{{ board.createdAt | format_datetime_exact }}</small>
+                </a>
+            </div>
+            {% endfor %} {% else %}
+            <p>No boards have been shared with you yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Chart data
+        const chartData = {
+            labels: {{ chart_labels|default([])|tojson }},
+            datasets: [{
+                label: 'Activity Count',
+                data: {{ chart_data|default([])|tojson }},
+                backgroundColor: 'rgba(33, 37, 41, 0.2)',
+                borderColor: 'rgba(33, 37, 41, 1)',
+                borderWidth: 2,
+                tension: 0.3,
+                pointBackgroundColor: 'rgba(33, 37, 41, 1)',
+                pointRadius: 4
+            }]
+        };
+
+        // Chart configuration
+        const chartConfig = {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                const date = new Date(tooltipItems[0].label);
+                                return date.toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                });
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            callback: function(value, index) {
+                                const date = new Date(this.getLabelForValue(value));
+                                return date.toLocaleDateString('en-US', {
+                                    weekday: 'short',
+                                    month: 'short',
+                                    day: 'numeric'
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        // Create the chart
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        new Chart(ctx, chartConfig);
+    });
+</script>
+{% endblock %}

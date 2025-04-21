@@ -1,0 +1,109 @@
+{% extends "layout.html" %} {% block title %}Google Login - Task Management
+System{% endblock %} {% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Login with Google</h3>
+            </div>
+            <div class="card-body text-center">
+                <p>
+                    Click the button below to sign in with your Google account.
+                </p>
+                <button id="googleSignInButton" class="btn btn-lg btn-primary">
+                    <i class="bi bi-google"></i> Sign in with Google
+                </button>
+                <div id="loading" class="mt-3 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Authenticating...</p>
+                </div>
+                <div id="error-message" class="alert alert-danger mt-3 d-none">
+                    Error message will appear here
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+    // Debug message function
+    function showError(message) {
+        const errorElement = document.getElementById("error-message");
+        errorElement.textContent = message;
+        errorElement.classList.remove("d-none");
+
+        // Also show in console
+        console.error(message);
+
+        // Hide loading
+        document.getElementById("loading").classList.add("d-none");
+        document
+            .getElementById("googleSignInButton")
+            .classList.remove("d-none");
+    }
+
+    // Get elements
+    const googleSignInButton = document.getElementById("googleSignInButton");
+    const loadingIndicator = document.getElementById("loading");
+
+    // Add click event
+    googleSignInButton.addEventListener("click", function () {
+        console.log("Google sign-in button clicked");
+
+        // Show loading indicator
+        googleSignInButton.classList.add("d-none");
+        loadingIndicator.classList.remove("d-none");
+
+        try {
+            // Check if Firebase is initialized
+            if (!firebase) {
+                return showError(
+                    "Firebase is not defined. Make sure Firebase SDK is loaded correctly."
+                );
+            }
+
+            const auth = firebase.auth();
+            const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+            // Sign in with Google
+            auth.signInWithPopup(googleProvider)
+                .then((result) => {
+                    console.log("Google sign-in successful");
+                    // Get the user's ID token
+                    return result.user.getIdToken();
+                })
+                .then((idToken) => {
+                    console.log("Got ID token, sending to backend");
+                    // Send the token to the backend
+                    return fetch('{{ url_for("process_google_login") }}', {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                        },
+                        body: `idToken=${encodeURIComponent(idToken)}`,
+                    });
+                })
+                .then((response) => {
+                    console.log("Backend response received");
+                    return response.json();
+                })
+                .then((data) => {
+                    console.log("Response data:", data);
+                    if (data.success) {
+                        // Redirect to dashboard
+                        window.location.href = data.redirect;
+                    } else {
+                        throw new Error(data.error || "Authentication failed");
+                    }
+                })
+                .catch((error) => {
+                    showError("Login error: " + error.message);
+                });
+        } catch (error) {
+            showError("Error initializing login: " + error.message);
+        }
+    });
+</script>
+{% endblock %}

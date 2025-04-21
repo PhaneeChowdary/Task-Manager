@@ -1,0 +1,12 @@
+{% extends "layout.html" %} {% block title %}Error - Task Management System{%
+endblock %} {% block content %}
+<div class="container mt-5">
+    <div class="alert alert-danger card card-fancy">
+        <h4>An error occurred</h4>
+        <p>{{ error }}</p>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-primary mt-3"
+        >Return to Home</a
+    >
+</div>
+{% endblock %}

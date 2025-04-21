@@ -1,0 +1,373 @@
+{% extends "layout.html" %} {% block title %}My Boards - Task Management
+System{% endblock %} {% block content %}
+<div
+    class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4"
+>
+    <h1>My Boards ({{ boards|length }})</h1>
+    <div class="board-header-buttons d-flex align-items-center flex-wrap gap-2">
+        <div class="dropdown me-2">
+            <button
+                class="btn btn-primary dropdown-toggle"
+                type="button"
+                id="exportDropdownMyBoards"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+            >
+                <i class="bi bi-download"></i> Export
+            </button>
+            <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="exportDropdownMyBoards"
+            >
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="{{ url_for('export_my_boards_csv') }}"
+                    >
+                        Export as CSV
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <button
+            type="button"
+            class="btn btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#createBoardModal"
+        >
+            <i class="bi bi-plus-lg"></i> New Board
+        </button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="d-flex flex-column flex-md-row align-items-start mb-4">
+        <div
+            class="d-flex flex-column flex-md-row align-items-stretch gap-2"
+            style="max-width: 500px; width: 100%"
+        >
+            <!-- Search Input with Icon -->
+            <div class="col-12 col-md-auto">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input
+                        type="text"
+                        id="search-board"
+                        class="form-control"
+                        placeholder="Search boards..."
+                        aria-label="Search boards"
+                    />
+                </div>
+            </div>
+
+            <!-- Filter by date created -->
+            <div class="col-12 col-md-auto">
+                <input
+                    type="date"
+                    id="created-date-filter"
+                    class="form-control"
+                    placeholder="Created date or range"
+                />
+            </div>
+
+            <!-- Sort Select -->
+            <div class="col-12 col-md-auto">
+                <select id="sort-boards" class="form-select">
+                    <option value="created-desc">Newest First</option>
+                    <option value="created-asc">Oldest First</option>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="tasks-desc">Most Tasks</option>
+                    <option value="tasks-asc">Fewest Tasks</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-auto">
+                <button id="clear-filters" class="btn btn-secondary">
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Board List -->
+<div class="row" id="boards-list">
+    {% if boards %} {% for board in boards %}
+    <div class="col-md-6 col-lg-4 mb-4 board-card-container">
+        <div class="card card-fancy board-card h-100">
+            <div class="card-body">
+                <h5 class="card-title board-title">{{ board.name }}</h5>
+                <p class="card-text">
+                    {{ board.description or 'No description' }}
+                </p>
+                <div class="d-flex justify-content-between text-muted mb-3">
+                    <small
+                        class="created-at"
+                        data-timestamp="{{ board.createdAt }}"
+                        >Created: {{ board.createdAt | format_datetime_exact
+                        }}</small
+                    >
+                    <small
+                        >{{ board.users|length }} <i class="bi bi-people"></i
+                    ></small>
+                </div>
+                <div class="progress mb-3" style="height: 10px">
+                    <div
+                        class="progress-bar bg-dark"
+                        role="progressbar"
+                        style="width: {{ (board.completedTaskCount / board.taskCount * 100) if (board.taskCount and board.taskCount > 0) else 0 }}%;"
+                        aria-valuenow="{{ (board.completedTaskCount / board.taskCount * 100) if (board.taskCount and board.taskCount > 0) else 0 }}"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                    ></div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted task-count">
+                        Tasks: {{ board.completedTaskCount or 0 }}/{{
+                        board.taskCount or 0 }}
+                    </span>
+
+                    <a
+                        href="{{ url_for('board', board_id=board.id) }}"
+                        class="btn btn-primary btn-sm"
+                        >Open Board</a
+                    >
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %} {% else %}
+    <div class="col-12 text-center py-5">
+        <div class="mb-3">
+            <i
+                class="bi bi-clipboard-x"
+                style="font-size: 3rem; color: #ccc"
+            ></i>
+        </div>
+        <h3>No Boards Yet</h3>
+        <p class="text-muted">Create your first board to get started</p>
+        <button
+            type="button"
+            class="btn btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#createBoardModal"
+        >
+            Create Board
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<div id="no-boards-message" class="text-center text-muted py-5 d-none">
+    <i class="bi bi-clipboard-x" style="font-size: 2rem"></i>
+    <p>No boards match the selected filters.</p>
+</div>
+
+<!-- Create Board Modal -->
+<div class="modal fade" id="createBoardModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Board</h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <form action="{{ url_for('create_board') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Board Name</label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="name"
+                            name="name"
+                            required
+                        />
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label"
+                            >Description (Optional)</label
+                        >
+                        <textarea
+                            class="form-control"
+                            id="description"
+                            name="description"
+                            rows="3"
+                        ></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Create Board
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+    function sortBoards() {
+        const sortSelect = document.getElementById("sort-boards");
+        const sortValue = sortSelect.value;
+
+        const boardColumns = Array.from(
+            document.querySelectorAll(".col-md-6.col-lg-4.mb-4")
+        );
+
+        boardColumns.sort((a, b) => {
+            const boardA = a.querySelector(".card.h-100.board-card");
+            const boardB = b.querySelector(".card.h-100.board-card");
+
+            switch (sortValue) {
+                case "created-desc":
+                    return getBoardDate(boardB) - getBoardDate(boardA);
+                case "created-asc":
+                    return getBoardDate(boardA) - getBoardDate(boardB);
+                case "name-asc":
+                    return getBoardName(boardA).localeCompare(
+                        getBoardName(boardB)
+                    );
+                case "name-desc":
+                    return getBoardName(boardB).localeCompare(
+                        getBoardName(boardA)
+                    );
+                case "tasks-desc":
+                    return (
+                        getBoardTaskCount(boardB) - getBoardTaskCount(boardA)
+                    );
+                case "tasks-asc":
+                    return (
+                        getBoardTaskCount(boardA) - getBoardTaskCount(boardB)
+                    );
+                default:
+                    return 0;
+            }
+        });
+
+        const boardsRow = document.querySelector(".row#boards-list");
+        boardColumns.forEach((column) => boardsRow.appendChild(column));
+    }
+
+    function getBoardDate(boardElement) {
+        const dateElement = boardElement.querySelector(".created-at");
+        return dateElement
+            ? new Date(dateElement.getAttribute("data-timestamp")).getTime()
+            : 0;
+    }
+
+    function getBoardName(boardElement) {
+        const nameElement = boardElement.querySelector(".board-title");
+        return nameElement ? nameElement.textContent.trim() : "";
+    }
+
+    function getBoardTaskCount(boardElement) {
+        const countElement = boardElement.querySelector(".task-count");
+        if (!countElement) return 0;
+
+        const text = countElement.textContent;
+        const match = text.match(/(\d+)\/(\d+)/);
+        return match && match[2] ? parseInt(match[2], 10) : 0;
+    }
+
+    function filterBoards() {
+        const searchTerm =
+            document.getElementById("search-board")?.value.toLowerCase() || "";
+        const dateRangeValue =
+            document.getElementById("created-date-filter")?.value || "";
+        const boardCards = document.querySelectorAll(".board-card-container");
+
+        let visibleCount = 0;
+
+        boardCards.forEach((card) => {
+            const title =
+                card.querySelector(".board-title")?.textContent.toLowerCase() ||
+                "";
+            const description =
+                card.querySelector(".card-text")?.textContent.toLowerCase() ||
+                "";
+            const dateAttr = card
+                .querySelector(".created-at")
+                ?.getAttribute("data-timestamp");
+
+            const searchMatch =
+                title.includes(searchTerm) || description.includes(searchTerm);
+
+            let dateMatch = true;
+            if (dateRangeValue && dateAttr) {
+                const createdDate = new Date(dateAttr)
+                    .toISOString()
+                    .split("T")[0];
+                const [start, end] = dateRangeValue.split(" to ");
+                if (start && end) {
+                    dateMatch = createdDate >= start && createdDate <= end;
+                } else {
+                    dateMatch = createdDate === start;
+                }
+            }
+
+            const shouldShow = searchMatch && dateMatch;
+            card.style.display = shouldShow ? "block" : "none";
+            if (shouldShow) visibleCount++;
+        });
+
+        const noBoardsMsg = document.getElementById("no-boards-message");
+        if (noBoardsMsg) {
+            noBoardsMsg.classList.toggle("d-none", visibleCount > 0);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const sortBoardsSelect = document.getElementById("sort-boards");
+        const searchInput = document.getElementById("search-board");
+        const createdDateInput = document.getElementById("created-date-filter");
+
+        if (sortBoardsSelect) {
+            sortBoardsSelect.addEventListener("change", sortBoards);
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener("input", filterBoards);
+        }
+
+        if (createdDateInput) {
+            flatpickr("#created-date-filter", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                allowInput: true,
+                onChange: function () {
+                    filterBoards();
+                },
+            });
+
+            createdDateInput.addEventListener("change", filterBoards);
+        }
+
+        const clearBtn = document.getElementById("clear-filters");
+
+        if (clearBtn) {
+            clearBtn.addEventListener("click", () => {
+                document.getElementById("search-board").value = "";
+                document.getElementById("created-date-filter").value = "";
+                filterBoards(); // Or filterSharedBoards() based on context
+            });
+        }
+
+        filterBoards(); // Initial load
+    });
+</script>
+{% endblock %}

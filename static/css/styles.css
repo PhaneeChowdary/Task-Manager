@@ -1,0 +1,318 @@
+/* General Styles */
+body {
+    font-family: "Times New Roman", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.content-container {
+    flex: 1 0 auto;
+}
+
+/* Stats Card Styles */
+.stats-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-bottom: 15px;
+    color: #212529;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card h3 {
+    font-size: 2rem;
+    margin-bottom: 5px;
+    color: #000000;
+}
+
+/* Board Card Styles */
+.board-card {
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: transform 0.3s, box-shadow 0.3s;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.board-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.board-card .title {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.board-card .description {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.board-card .meta-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Task Card Styles */
+.task-item {
+    padding: 12px 15px;
+    border-left: 3px solid #212529;
+    background-color: #ffffff;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.task-item.completed {
+    border-left-color: #4e4e4e;
+    background-color: #f8f9fa;
+}
+
+.task-item .task-title {
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.task-item.completed .task-title {
+    text-decoration: line-through;
+    color: #6c757d;
+}
+
+.task-item .task-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.task-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* Navigation Bar */
+.navbar {
+    background-color: #212529 !important;
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: #212529;
+    border-color: #212529;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: #000000;
+    border-color: #000000;
+}
+
+.btn-outline-primary {
+    color: #212529;
+    border-color: #212529;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+    background-color: #212529;
+    border-color: #212529;
+}
+
+/* List groups */
+.list-group-item-action:hover {
+    background-color: #f8f9fa;
+}
+
+/* Activity Feed */
+.activity-item {
+    border-left: 3px solid #212529;
+    padding-left: 15px;
+    margin-bottom: 10px;
+}
+
+/* Form elements */
+.form-control:focus,
+.form-select:focus {
+    border-color: rgba(0, 0, 0, 0.25);
+    box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.1);
+}
+
+.task-item {
+    border: 1px solid #dee2e6; /* subtle border */
+    border-radius: 0.5rem; /* rounded corners */
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    background-color: #ffffff; /* white background */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* soft shadow */
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.task-item:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* slight lift on hover */
+}
+
+.card.card-fancy {
+    border: 1px solid #e0e0e0;
+    border-radius: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+    padding: 1rem;
+    transition: transform 0.2s ease-in-out;
+}
+
+.card.card-fancy:hover {
+    transform: translateY(-3px);
+}
+
+.card-fancy .card-title {
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.5rem;
+}
+
+.card-fancy .card-text {
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+}
+
+.task-item {
+    border: 1px solid #ddd;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background-color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    position: relative;
+}
+
+.task-item:hover {
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.task-item h5.task-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.task-item .text-muted {
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+}
+
+.task-item .task-meta {
+    font-size: 0.85rem;
+    color: #555;
+    border-top: 1px solid #eee;
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+}
+
+.task-meta i {
+    margin-right: 0.25rem;
+}
+
+.task-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.task-comments,
+.task-attachments {
+    margin-top: 1rem;
+}
+
+.task-comments .list-group-item,
+.task-attachments .list-group-item {
+    font-size: 0.9rem;
+}
+
+.task-comments form,
+.task-attachments form {
+    margin-top: 0.5rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Activity Feed Styling */
+.activity-item {
+    position: relative;
+    padding-left: 1rem;
+    border-left: 3px solid #212529;
+}
+
+.activity-item::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -8px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #212529;
+}
+
+.activity-item p {
+    margin-bottom: 0.25rem;
+}
+
+.activity-item small {
+    display: block;
+    font-size: 0.75rem;
+}
+
+footer {
+    flex-shrink: 0;
+    margin-top: auto;
+}
+
+.task-members-info {
+    cursor: pointer;
+    position: relative;
+}
+
+.task-members-info:hover {
+    text-decoration: underline;
+}
+
+/* Make the tooltip a bit more readable */
+.tooltip-inner {
+    max-width: 300px;
+    text-align: left;
+    padding: 10px;
+}

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+task_env/
+.DS_Store
+Thumbs.db
+.env
+serviceAccountKey.json
+.vscode/
+*.log
+basic_app.py
