@@ -190,26 +190,35 @@
         {% block scripts %}{% endblock %}
     </body>
     <!-- Footer -->
-    <footer class="bg-light border-top py-4 mt-5 col-xs-3">
+    <footer class="border-top py-4 mt-5">
         <div
             class="container d-flex flex-column flex-md-row justify-content-between align-items-center"
             style="max-width: 1100px"
         >
             <div class="mb-2 mb-md-0 text-center text-md-start">
-                <span class="text-muted"
-                    >&copy; {{ current_year }} Phaneendra Babu Gunturu</span
-                >
+                <span class="text-muted">
+                    &copy; {{ current_year }} Phaneendra Babu Gunturu
+                </span>
             </div>
             <div class="text-center text-md-end">
                 <a
+                    href="https://phaneechowdary.github.io"
+                    class="text-decoration-none text-muted me-3"
+                    target="_blank"
+                >
+                    <i class="bi bi-globe"></i>
+                </a>
+                <a
                     href="https://github.com/PhaneeChowdary"
-                    class="text-decoration-none me-3 text-muted"
+                    class="text-decoration-none text-muted me-3"
+                    target="_blank"
                 >
                     <i class="bi bi-github"></i>
                 </a>
                 <a
                     href="mailto:phaneegunturu@gmail.com"
                     class="text-decoration-none text-muted"
+                    target="_blank"
                 >
                     <i class="bi bi-envelope"></i>
                 </a>
