@@ -139,29 +139,29 @@ System{% endblock %} {% block content %}
     </div>
     {% endfor %} {% else %}
     <div class="col-12 text-center py-5">
-        <div class="mb-3">
-            <i
-                class="bi bi-clipboard-x"
-                style="font-size: 3rem; color: #ccc"
-            ></i>
+        <div
+            id="no-boards-message"
+            class="{% if shared_boards|length > 0 %}d-none{% endif %} text-center py-4 text-muted"
+        >
+            <i class="bi bi-clipboard-x" style="font-size: 2rem"></i>
+            <h3>No Shared Boards</h3>
+            <p class="text-muted">
+                Other users haven't shared any boards with you yet.
+            </p>
         </div>
-        <h3>No Shared Boards</h3>
-        <p class="text-muted">
-            Other users haven't shared any boards with you yet.
-        </p>
         <button
             type="button"
             class="btn btn-primary"
             data-bs-toggle="modal"
             data-bs-target="#createBoardModal"
         >
-            Create Board
+            Create your first shared board
         </button>
     </div>
     {% endif %}
 </div>
 
-<div id="no-boards-message" class="text-center text-muted py-5 d-none">
+<div id="no-filtered-boards-message" class="text-center text-muted py-5 d-none">
     <i class="bi bi-clipboard-x" style="font-size: 2rem"></i>
     <p>No boards match the selected filters.</p>
 </div>
@@ -303,7 +303,6 @@ System{% endblock %} {% block content %}
             const dateAttr = card
                 .querySelector(".created-at")
                 ?.getAttribute("data-timestamp");
-
             const searchMatch =
                 title.includes(searchTerm) || description.includes(searchTerm);
             let dateMatch = true;
@@ -325,10 +324,29 @@ System{% endblock %} {% block content %}
             if (shouldShow) visibleCount++;
         });
 
-        // Show/hide "no boards" message
-        const noBoardsMsg = document.getElementById("no-boards-message");
-        if (noBoardsMsg) {
-            noBoardsMsg.classList.toggle("d-none", visibleCount > 0);
+        const noBoardsMessage = document.getElementById("no-boards-message");
+        const noMatchMessage = document.getElementById(
+            "no-filtered-boards-message"
+        );
+
+        const anyVisible = Array.from(boardCards).some(
+            (card) => card.style.display !== "none"
+        );
+
+        if (!anyVisible && boardCards.length > 0) {
+            // Boards exist, but none match filter
+            noMatchMessage.classList.remove("d-none");
+            noBoardsMessage.classList.add("d-none");
+        } else {
+            // Some or all match
+            noMatchMessage.classList.add("d-none");
+            noBoardsMessage.classList.add("d-none");
+        }
+
+        // If no boards exist at all
+        if (boardCards.length === 0) {
+            noBoardsMessage.classList.remove("d-none");
+            noMatchMessage.classList.add("d-none");
         }
     }
 
@@ -361,13 +379,30 @@ System{% endblock %} {% block content %}
 
         if (clearBtn) {
             clearBtn.addEventListener("click", () => {
+                // Reset inputs
                 document.getElementById("search-board").value = "";
                 document.getElementById("created-date-filter").value = "";
-                filterBoards(); // Or filterSharedBoards() based on context
+
+                // Reset sort dropdown to default (Newest First)
+                const sortBoardsSelect = document.getElementById("sort-boards");
+                if (sortBoardsSelect) {
+                    sortBoardsSelect.value = "created-desc";
+                    sortBoards(); // Re-sort after resetting
+                }
+
+                // Clear flatpickr date range if used
+                const fp = document.getElementById(
+                    "created-date-filter"
+                )._flatpickr;
+                if (fp) {
+                    fp.clear();
+                }
+
+                // Re-filter boards
+                filterBoards();
             });
         }
-
-        filterBoards(); // Initial filter on load
+        filterBoards(); // Initial load
     });
 </script>
 {% endblock %}

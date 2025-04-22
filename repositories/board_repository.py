@@ -30,24 +30,30 @@ class BoardRepository:
         """Get boards shared with a specific user"""
         try:
             boards = []
-            # This is an optimization over your original code
-            # Assuming you have a compound index set up for 'users.uid'
             shared_ref = self.db.collection('boards').stream()
-            
+
             for board in shared_ref:
                 board_data = board.to_dict()
                 board_users = board_data.get('users', [])
-                is_member = any(u.get('uid') == user_id or u.get('email') == user_email for u in board_users)
-                
-                if is_member and board_data['createdBy'] != user_id:
+
+                # Check if the current user is still in the board's user list
+                is_still_member = any(
+                    user.get('uid') == user_id or user.get('email') == user_email
+                    for user in board_users
+                )
+
+                # Only include if the user is still a member and not the board's creator
+                if is_still_member and board_data.get('createdBy') != user_id:
                     board_data['id'] = board.id
                     boards.append(board_data)
-                    
+
             logger.info(f"Retrieved {len(boards)} shared boards for user {user_id}")
             return boards
+
         except Exception as e:
             logger.error(f"Error retrieving shared boards: {str(e)}", exc_info=True)
             return []
+
             
     def get_board(self, board_id):
         """Get a specific board by ID"""

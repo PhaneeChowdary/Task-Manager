@@ -72,6 +72,7 @@ def server_error(e):
 from blueprints.auth_routes import init_auth_routes
 from blueprints.board_routes import init_board_routes
 from blueprints.task_routes import init_task_routes
+from blueprints.admin_routes import admin_bp
 
 auth_bp = init_auth_routes(db, firebase_auth)
 board_bp = init_board_routes(db)
@@ -80,8 +81,9 @@ task_bp = init_task_routes(db)
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(board_bp, url_prefix='/boards')
 app.register_blueprint(task_bp, url_prefix='/tasks')
+app.register_blueprint(admin_bp, url_prefix='/admin')
 
-# Add route aliases for backward compatibility with proper method handling
+# Route aliases for backward compatibility with method handling
 @app.route('/boards')
 def boards():
     return redirect(url_for('board.boards'))
@@ -180,6 +182,11 @@ def toggle_task(board_id, task_id):
 @app.route('/add-comment/<board_id>/<task_id>', methods=['POST'])
 def add_comment(board_id, task_id):
     return redirect(url_for('task.add_comment', board_id=board_id, task_id=task_id), code=307)
+
+@app.route('/leave-board/<board_id>', methods=['POST'])
+def leave_board(board_id):
+    return redirect(url_for('board.leave_board', board_id=board_id), code=307)
+
 
 # Main routes
 @app.route('/')
@@ -319,5 +326,10 @@ def debug_session():
 def inject_current_year():
     return {'current_year': datetime.now().year}
 
+@app.context_processor
+def inject_user():
+    return {'user': session.get('user')}
+
+
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

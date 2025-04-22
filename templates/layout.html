@@ -87,17 +87,28 @@
                                 class="dropdown-menu"
                                 aria-labelledby="dropdownMenuButton"
                             >
+                                {% if user.is_admin %}
+                                <a
+                                    class="dropdown-item"
+                                    href="{{ url_for('admin.list_users') }}"
+                                >
+                                    <i class="bi bi-speedometer2"></i> Admin
+                                    Dashboard
+                                </a>
+                                <hr class="dropdown-divider" />
+                                {% endif %}
                                 <a
                                     class="dropdown-item"
                                     href="{{ url_for('profile') }}"
-                                    >Profile</a
+                                    ><i class="bi-person-circle"></i> Profile</a
                                 >
                                 <hr class="dropdown-divider" />
                                 <a
                                     class="dropdown-item"
                                     style="color: rgb(179, 9, 9)"
                                     href="{{ url_for('logout') }}"
-                                    >Logout</a
+                                    ><i class="bi-box-arrow-right"></i>
+                                    Logout</a
                                 >
                             </div>
                         </div>

@@ -316,3 +316,8 @@ footer {
     text-align: left;
     padding: 10px;
 }
+
+.table {
+    border-radius: 12px;
+    overflow: hidden;
+}

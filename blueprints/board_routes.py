@@ -48,6 +48,16 @@ def init_board_routes(db):
             flash("Board not found", "danger")
             return redirect(url_for('dashboard'))
         
+        creator_id = board_data.get('createdBy')
+        creator_name = board_data.get('creatorName', 'Unknown')
+        creator_status = "active"
+
+        from firebase_admin import auth as admin_auth
+        try:
+            admin_auth.get_user(creator_id)
+        except Exception:
+            creator_status = "deleted"
+
         # Check if user is part of this board
         current_user_id = session['user']['uid']
         current_user_email = session['user']['email']
@@ -55,7 +65,7 @@ def init_board_routes(db):
         user_role = None
         
         for user in board_data.get('users', []):
-            if user.get('uid') == current_user_id:
+            if user.get('uid') == current_user_id or user.get('email') == current_user_email:
                 user_in_board = True
                 user_role = user.get('role')
                 break
@@ -68,7 +78,7 @@ def init_board_routes(db):
         all_tasks = task_repo.get_board_tasks(board_id)
         
         # Filter tasks based on user role and assignments
-        is_board_owner = (user_role == 'owner' or board_data['createdBy'] == current_user_id)
+        is_board_owner = user_role == 'owner'
         
         if is_board_owner:
             # Board owners see all tasks
@@ -112,7 +122,8 @@ def init_board_routes(db):
                             tasks=visible_tasks,
                             all_tasks_count=all_tasks_count,
                             visible_tasks_count=visible_tasks_count,
-                            is_owner=board_data['createdBy'] == current_user_id)
+                            is_owner=is_board_owner,
+                            creator_status=creator_status)
     
     @board_bp.route('/shared-board/<board_id>')
     @login_required
@@ -124,6 +135,17 @@ def init_board_routes(db):
             flash("Board not found", "danger")
             return redirect(url_for('dashboard'))
         
+        creator_id = board_data.get('createdBy')
+        creator_name = board_data.get('creatorName', 'Unknown')
+        creator_status = "deleted"  # default
+
+        # Check if creator is still in the board users list
+        for user in board_data.get('users', []):
+            if user.get('uid') == creator_id:
+                creator_status = "active"
+                break
+
+
         # Check if user is part of this board
         current_user_id = session['user']['uid']
         current_user_email = session['user']['email']
@@ -131,7 +153,7 @@ def init_board_routes(db):
         user_role = None
         
         for user in board_data.get('users', []):
-            if user.get('uid') == current_user_id:
+            if user.get('uid') == current_user_id or user.get('email') == current_user_email:
                 user_in_board = True
                 user_role = user.get('role')
                 break
@@ -144,7 +166,7 @@ def init_board_routes(db):
         all_tasks = task_repo.get_board_tasks(board_id)
         
         # Filter tasks based on user role and assignments
-        is_board_owner = (user_role == 'owner' or board_data['createdBy'] == current_user_id)
+        is_board_owner = user_role == 'owner'
         
         if is_board_owner:
             # Board owners see all tasks
@@ -188,8 +210,10 @@ def init_board_routes(db):
                             tasks=visible_tasks,
                             all_tasks_count=all_tasks_count,
                             visible_tasks_count=visible_tasks_count,
-                            is_owner=board_data['createdBy'] == current_user_id)
-    
+                            is_owner=board_data['createdBy'] == session['user']['uid'],
+                            creator_name=creator_name,
+                            creator_status=creator_status)
+
 
     @board_bp.route('/create-board', methods=['POST'])
     @login_required
@@ -447,6 +471,58 @@ def init_board_routes(db):
         boards = board_repo.get_shared_boards(user_id, user_email)
 
         return generate_board_csv_response(boards, filename='shared_boards.csv')
+    
+    @board_bp.route('/leave-board/<board_id>', methods=['POST'])
+    @login_required
+    def leave_board(board_id):
+        board_data = board_repo.get_board(board_id)
+        current_uid = session['user']['uid']
+
+        if not board_data:
+            flash("Board not found", "danger")
+            return redirect(url_for('dashboard'))
+
+        # If owner is leaving, delete the board and notify
+        if board_data['createdBy'] == current_uid:
+            board_repo.delete_board(board_id)
+            flash("You were the owner. Board and all members were removed.", "warning")
+            return redirect(url_for('dashboard'))
+
+        # Otherwise, remove the user
+        board_repo.remove_user_from_board(board_id, current_uid)
+        flash("You have left the board.", "warning")
+        return redirect(url_for('board.shared_boards'))
+    
+    @board_bp.route('/edit-board/<board_id>', methods=['POST'])
+    @login_required
+    def edit_board(board_id):
+        board_data = board_repo.get_board(board_id)
+        if not board_data:
+            flash("Board not found", "danger")
+            return redirect(url_for('dashboard'))
+
+        current_uid = session['user']['uid']
+        user_is_owner = board_data['createdBy'] == current_uid
+
+        # Check if user is in board
+        if not any(user['uid'] == current_uid for user in board_data.get('users', [])):
+            flash("You don't have access to edit this board", "danger")
+            return redirect(url_for('dashboard'))
+
+        # Update name and description
+        name = request.form.get('name')
+        description = request.form.get('description')
+
+        update_data = {'name': name, 'description': description}
+        board_repo.update_board(board_id, update_data)
+
+        flash("Board updated successfully", "success")
+        if user_is_owner:
+            return redirect(url_for('board.board', board_id=board_id))
+        else:
+            return redirect(url_for('board.shared_board', board_id=board_id))
+
+
 
     def generate_board_csv_response(boards, filename='boards.csv'):
         output = StringIO()

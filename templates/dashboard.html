@@ -49,7 +49,7 @@ System{% endblock %} {% block content %}
     </div>
 
     <!-- Recent Activity -->
-    <h3>Recent Activity</h3>
+    <h3 class="mt-4">Recent Activity</h3>
     <div id="recent-activity" class="mb-4">
         {% if activities %} {% for activity in activities %}
         <div class="card card-fancy mb-2">
@@ -68,7 +68,9 @@ System{% endblock %} {% block content %}
     <!-- Recent Boards -->
     <div class="row">
         <div class="col-md-6 mt-2">
-            <h3 class="mb-3"><i class="bi bi-clock"></i> Your Recent Boards</h3>
+            <h3 class="mt-4 mb-4">
+                <i class="bi bi-clock"></i> Your Recent Boards
+            </h3>
             {% if user_boards %} {% for board in user_boards[:5] %}
             <div class="card card-fancy mb-2">
                 <a
@@ -85,15 +87,20 @@ System{% endblock %} {% block content %}
                 </a>
             </div>
             {% endfor %} {% else %}
-            <p>You haven't created any boards yet.</p>
-            <a href="{{ url_for('boards') }}" class="btn btn-primary"
+            <div class="list-group-item text-center text-muted mb-4">
+                You haven't created any boards yet.
+            </div>
+            <a href="{{ url_for('boards') }}" class="btn btn-primary mt-2"
                 >Create your first board</a
             >
             {% endif %}
         </div>
         <div class="col-md-6 mt-2">
-            <h3 class="mb-3"><i class="bi bi-people"></i> Shared With You</h3>
-            {% if shared_boards %} {% for board in shared_boards %}
+            <h3 class="mt-4 mb-4">
+                <i class="bi bi-people"></i> Shared With You
+            </h3>
+
+            {% if shared_boards %} {% for board in shared_boards[:5] %}
             <div class="card card-fancy mb-2">
                 <a
                     href="{{ url_for('board', board_id=board.id) }}"
@@ -107,7 +114,9 @@ System{% endblock %} {% block content %}
                 </a>
             </div>
             {% endfor %} {% else %}
-            <p>No boards have been shared with you yet.</p>
+            <div class="list-group-item text-center text-muted">
+                No boards have been shared with you yet.
+            </div>
             {% endif %}
         </div>
     </div>

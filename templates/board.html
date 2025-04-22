@@ -11,6 +11,13 @@ System{% endblock %} {% block content %}
         </p>
     </div>
     <div class="board-header-buttons d-flex align-items-center flex-wrap gap-2">
+        <button
+            class="btn btn-primary me-2"
+            data-bs-toggle="modal"
+            data-bs-target="#editBoardModal"
+        >
+            <i class="bi bi-pencil-square"></i> Edit Board
+        </button>
         <div class="dropdown me-2">
             <button
                 class="btn btn-primary dropdown-toggle"
@@ -51,7 +58,12 @@ System{% endblock %} {% block content %}
         <div class="card card-fancy">
             <div class="card-body">
                 <h5 class="card-title">Board Information</h5>
-                <p class="card-text">Created by: {{ board.creatorName }}</p>
+                <p class="card-text">
+                    Created by: {{ board.creatorName }} {% if creator_status ==
+                    'deleted' %}
+                    <span class="badge bg-danger ms-2">Account Deleted</span>
+                    {% endif %}
+                </p>
                 <p class="card-text">
                     Created at: {{ board.createdAt | format_datetime_exact }}
                 </p>
@@ -909,8 +921,9 @@ System{% endblock %} {% block content %}
                         class="list-group-item d-flex justify-content-between align-items-center"
                     >
                         <div>
-                            {{ board_user.displayName or board_user.email }} {%
-                            if board_user.role == 'owner' %}
+                            {{ board_user.displayName or board_user.email or
+                            "(Account Deleted)" }} {% if board_user.role ==
+                            'owner' %}
                             <span class="badge bg-dark ms-1">Owner</span>
                             {% endif %}
                         </div>
@@ -1082,6 +1095,61 @@ System{% endblock %} {% block content %}
                 </div>
             </form>
         </div>
+    </div>
+</div>
+
+<!-- Edit Board Modal -->
+<div class="modal fade" id="editBoardModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form
+            method="POST"
+            action="{{ url_for('board.edit_board', board_id=board.id) }}"
+        >
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Board</h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Board Name</label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            name="name"
+                            value="{{ board.name }}"
+                            required
+                        />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea
+                            class="form-control"
+                            name="description"
+                            rows="3"
+                        >
+{{ board.description }}</textarea
+                        >
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -1389,6 +1457,8 @@ System{% endblock %} {% block content %}
 
     document.addEventListener('DOMContentLoaded', function () {
 
+        document.getElementById('sortTasksDropdown').textContent = 'Newest First';
+
         // Initialize tooltips
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -1485,29 +1555,12 @@ System{% endblock %} {% block content %}
             });
         });
 
-        // Filter task by created date/range
-        flatpickr("#created-date-filter", {
-            mode: "range", dateFormat: "Y-m-d", allowInput: true,
-            onChange: function () {
-                applyFilters();
-            }
-        });
-        const createdDateInput = document.getElementById("created-date-filter");
-        if (createdDateInput) {
-            createdDateInput.addEventListener("change", applyFilters);
-        }
 
-        // Filter task by due date/range
-        flatpickr("#due-date-filter", {
-            mode: "range", dateFormat: "Y-m-d", allowInput: true,
-            onChange: function () {
-                applyFilters();
-            }
-        });
+        const createdDateInput = document.getElementById("created-date-filter");
         const dueDateFilterInput = document.getElementById('due-date-filter');
-        if (dueDateFilterInput) {
-            dueDateFilterInput.addEventListener('change', applyFilters);
-        }
+
+        if (createdDateInput) {createdDateInput.addEventListener("change", applyFilters);}
+        if (dueDateFilterInput) {dueDateFilterInput.addEventListener('change', applyFilters);}
 
         // Created by filter
         const createdByDropdownBtn = document.getElementById('createdByFilterDropdown');
@@ -1530,16 +1583,22 @@ System{% endblock %} {% block content %}
                 });
                 document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
                 currentFilter = 'all';
-
                 currentAssignedFilter = 'all';
-                document.getElementById('assignedFilterDropdown').textContent = 'All Users';
-
+                currentCreatedByFilter = 'all';
                 currentSort = 'created-desc';
+
+                document.getElementById('assignedFilterDropdown').textContent = 'All Users';
+                document.querySelectorAll('.sort-option').forEach(item => {item.classList.remove('active');});
                 document.getElementById('sortTasksDropdown').textContent = 'Newest First';
 
-                currentCreatedByFilter = 'all';
-                document.getElementById('createdByFilterDropdown').textContent = 'Created by';
+                // Highlight the default sort visually
+                document.querySelectorAll('.sort-option').forEach(item => {
+                    item.classList.remove('active');
+                });
+                const defaultSortOption = document.querySelector('.sort-option[data-value="created-desc"]');
+                if (defaultSortOption) {defaultSortOption.classList.add('active');}
 
+                document.getElementById('createdByFilterDropdown').textContent = 'Created by';
                 document.getElementById('task-search').value = '';
                 document.getElementById('created-date-filter')?._flatpickr?.clear();
                 document.getElementById('due-date-filter')?._flatpickr?.clear();
@@ -1551,11 +1610,10 @@ System{% endblock %} {% block content %}
     });
 
     // Due date for task
-    flatpickr("#due_date", {
-        dateFormat: "Y-m-d",
-        altInput: true,
-        altFormat: "F j, Y",
-        allowInput: true
-    });
+    flatpickr("#due_date", {dateFormat: "Y-m-d", altInput: true, altFormat: "F j, Y", allowInput: true});
+    // Filter task by created date/range
+    flatpickr("#created-date-filter", {mode: "range", dateFormat: "Y-m-d", allowInput: true, onChange: function () {applyFilters();}});
+    // Filter task by due date/range
+    flatpickr("#due-date-filter", {mode: "range", dateFormat: "Y-m-d", allowInput: true, onChange: function () {applyFilters();}});
 </script>
 {% endblock %}

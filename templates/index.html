@@ -13,7 +13,7 @@ endblock %} {% block content %} {% if user %}
     </div>
 
     <!-- Quick Stats -->
-    <div class="row mb-5">
+    <div class="row mb-4">
         <div class="col-md-4">
             <div class="stats-card card card-fancy">
                 <h3>{{ total_boards }}</h3>
@@ -49,7 +49,7 @@ endblock %} {% block content %} {% if user %}
     </div>
 
     <!-- Recent Activity -->
-    <h3>Recent Activity</h3>
+    <h3 class="mt-4">Recent Activity</h3>
     <div id="recent-activity" class="mb-4">
         {% if activities %} {% for activity in activities %}
         <div class="card card-fancy mb-2">
@@ -68,7 +68,9 @@ endblock %} {% block content %} {% if user %}
     <!-- Recent Boards -->
     <div class="row">
         <div class="col-md-6 mt-2">
-            <h3 class="mb-3"><i class="bi bi-clock"></i> Your Recent Boards</h3>
+            <h3 class="mt-4 mb-4">
+                <i class="bi bi-clock"></i> Your Recent Boards
+            </h3>
             {% if user_boards %} {% for board in user_boards[:5] %}
             <div class="card card-fancy mb-2">
                 <a
@@ -85,13 +87,18 @@ endblock %} {% block content %} {% if user %}
                 </a>
             </div>
             {% endfor %} {% else %}
-            <div class="list-group-item text-center text-muted">
-                No boards created yet
+            <div class="list-group-item text-center text-muted mb-4">
+                You haven't created any boards yet.
             </div>
+            <a href="{{ url_for('boards') }}" class="btn btn-primary mt-3"
+                >Create your first board</a
+            >
             {% endif %}
         </div>
         <div class="col-md-6 mt-2">
-            <h3 class="mb-3"><i class="bi bi-people"></i> Shared With You</h3>
+            <h3 class="mt-4 mb-4">
+                <i class="bi bi-people"></i> Shared With You
+            </h3>
 
             {% if shared_boards %} {% for board in shared_boards[:5] %}
             <div class="card card-fancy mb-2">
@@ -108,7 +115,7 @@ endblock %} {% block content %} {% if user %}
             </div>
             {% endfor %} {% else %}
             <div class="list-group-item text-center text-muted">
-                No shared boards
+                No boards have been shared with you yet.
             </div>
             {% endif %}
         </div>

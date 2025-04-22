@@ -1,0 +1,40 @@
+{% extends "layout.html" %} {% block content %}
+<div class="container mt-5" style="max-width: 1100px">
+    <h2 class="mb-4">Registered Users</h2>
+    {% if users %}
+    <div class="table-responsive">
+        <table
+            class="table table-bordered rounded-lg shadow-sm table-hover overflow-hidden"
+        >
+            <thead class="table-dark">
+                <tr>
+                    <th>Email</th>
+                    <th>Display Name</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.display_name or 'N/A' }}</td>
+                    <td>{{ 'Disabled' if user.disabled else 'Active' }}</td>
+                    <td>
+                        <a
+                            href="{{ url_for('admin.edit_user', uid=user.uid) }}"
+                            class="btn btn-sm btn-primary"
+                        >
+                            Edit
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No users found.</p>
+    {% endif %}
+</div>
+{% endblock %}

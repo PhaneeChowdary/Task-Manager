@@ -186,6 +186,14 @@ endblock %} {% block content %}
                 </div>
                 {% endfor %}
             </div>
+            <div
+                id="no-tasks-message"
+                class="text-center text-muted py-4 d-none"
+            >
+                <i class="bi bi-clipboard-x" style="font-size: 2rem"></i>
+                <p>No tasks match the selected filters.</p>
+            </div>
+
             {% if tasks|length > 5 %}
             <div class="mt-4 mb-4">
                 <button id="load-more-tasks" class="btn btn-primary">
@@ -194,18 +202,18 @@ endblock %} {% block content %}
             </div>
             {% endif %} {% else %}
             <div style="text-align: center; margin: 2rem 1rem">
-                You don't have any tasks assigned to you yet.
+                You don't have any tasks. Please check back later.
             </div>
-            {% endif %}
-
+            {% endif %} {% if not user.is_admin %}
             <button
                 type="button"
-                class="btn btn-danger text-center"
+                class="btn btn-danger text-center mt-4"
                 data-bs-toggle="modal"
                 data-bs-target="#confirmDeleteAccountModal"
             >
                 <i class="bi bi-trash"></i> Delete My Account
             </button>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -230,6 +238,10 @@ endblock %} {% block content %}
                         <br />This will permanently remove your profile, boards,
                         tasks, comments, and activity logs.
                     </p>
+                    <p>
+                        Your data will be exported to your mail on deletion
+                        automatically.
+                    </p>
                 </div>
                 <div class="modal-footer">
                     <button
@@ -250,12 +262,23 @@ endblock %} {% block content %}
 {% endblock %} {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-    const tasksData = {{ tasks|tojson|safe }};
-    let currentVisible = 5;
+        const tasksData = {{ tasks|tojson|safe }};
+        let currentVisible = 5;
 
-    function renderTasks(filteredTasks) {
+        function renderTasks(filteredTasks) {
         const wrapper = document.getElementById("tasks-wrapper");
+        const noTasksMsg = document.getElementById("no-tasks-message");
+        const loadMoreBtn = document.getElementById("load-more-tasks");
+
         wrapper.innerHTML = "";
+
+        if (filteredTasks.length === 0) {
+            noTasksMsg.classList.remove("d-none");
+            if (loadMoreBtn) loadMoreBtn.classList.add("d-none");
+            return;
+        } else {
+            noTasksMsg.classList.add("d-none");
+        }
 
         filteredTasks.slice(0, currentVisible).forEach(task => {
             const taskEl = document.createElement("div");
@@ -285,104 +308,107 @@ endblock %} {% block content %}
             wrapper.appendChild(taskEl);
         });
 
-        document.getElementById("load-more-tasks")?.classList.toggle("d-none", currentVisible >= filteredTasks.length);
-    }
-
-    function getPriorityClass(priority) {
-        if (priority === "high") return "bg-danger";
-        if (priority === "medium") return "bg-warning";
-        return "bg-success";
-    }
-
-    function capitalize(word) {
-        return word ? word.charAt(0).toUpperCase() + word.slice(1) : "";
-    }
-
-    function filterTasks() {
-        const status = document.getElementById("status-filter").value;
-        const search = document.getElementById("search-task").value.toLowerCase();
-        const createdRange = document.getElementById("created-date-range").value;
-        const dueRange = document.getElementById("due-date-range").value;
-        const sort = document.getElementById("sort-tasks").value;
-
-        let filtered = tasksData.filter(task => {
-            const title = task.title.toLowerCase();
-            const desc = (task.description || "").toLowerCase();
-            const created = task.createdAt ? new Date(task.createdAt).toISOString().split("T")[0] : null;
-            const due = task.dueDate;
-
-            // Status filter
-            if (status === "completed" && !task.completed) return false;
-            if (status === "active" && task.completed) return false;
-
-            // Search filter
-            if (search && !title.includes(search) && !desc.includes(search)) return false;
-
-            // Created range
-            if (createdRange) {
-                const [start, end] = createdRange.split(" to ");
-                if (start && created < start) return false;
-                if (end && created > end) return false;
-            }
-
-            // Due range
-            if (dueRange) {
-                const [start, end] = dueRange.split(" to ");
-                if (!due) return false;
-                if (start && due < start) return false;
-                if (end && due > end) return false;
-            }
-
-            return true;
-        });
-
-        // Sort
-        filtered.sort((a, b) => {
-            switch (sort) {
-                case "created-desc": return new Date(b.createdAt) - new Date(a.createdAt);
-                case "created-asc": return new Date(a.createdAt) - new Date(b.createdAt);
-                case "due-desc": return new Date(b.dueDate) - new Date(a.dueDate);
-                case "due-asc": return new Date(a.dueDate) - new Date(b.dueDate);
-                case "priority-desc": return getPriorityValue(b.priority) - getPriorityValue(a.priority);
-                case "priority-asc": return getPriorityValue(a.priority) - getPriorityValue(b.priority);
-                default: return 0;
-            }
-        });
-
-        renderTasks(filtered);
-    }
-
-    function getPriorityValue(p) {
-        return p === "high" ? 3 : p === "medium" ? 2 : 1;
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        // Load more handler
-        const loadMoreBtn = document.getElementById("load-more-tasks");
         if (loadMoreBtn) {
-            loadMoreBtn.addEventListener("click", () => {
-                currentVisible += 10;
-                filterTasks();
-            });
+            loadMoreBtn.classList.toggle("d-none", currentVisible >= filteredTasks.length);
+        }
+    }
+
+
+        function getPriorityClass(priority) {
+            if (priority === "high") return "bg-danger";
+            if (priority === "medium") return "bg-warning";
+            return "bg-success";
         }
 
-        flatpickr("#created-date-range", { mode: "range", dateFormat: "Y-m-d" });
-        flatpickr("#due-date-range", { mode: "range", dateFormat: "Y-m-d" });
+        function capitalize(word) {
+            return word ? word.charAt(0).toUpperCase() + word.slice(1) : "";
+        }
 
-        ["search-task", "status-filter", "created-date-range", "due-date-range", "sort-tasks"].forEach(id => {
-            document.getElementById(id)?.addEventListener("input", filterTasks);
+        function filterTasks() {
+            const status = document.getElementById("status-filter").value;
+            const search = document.getElementById("search-task").value.toLowerCase();
+            const createdRange = document.getElementById("created-date-range").value;
+            const dueRange = document.getElementById("due-date-range").value;
+            const sort = document.getElementById("sort-tasks").value;
+
+            let filtered = tasksData.filter(task => {
+                const title = task.title.toLowerCase();
+                const desc = (task.description || "").toLowerCase();
+                const created = task.createdAt ? new Date(task.createdAt).toISOString().split("T")[0] : null;
+                const due = task.dueDate;
+
+                // Status filter
+                if (status === "completed" && !task.completed) return false;
+                if (status === "active" && task.completed) return false;
+
+                // Search filter
+                if (search && !title.includes(search) && !desc.includes(search)) return false;
+
+                // Created range
+                if (createdRange) {
+                    const [start, end] = createdRange.split(" to ");
+                    if (start && created < start) return false;
+                    if (end && created > end) return false;
+                }
+
+                // Due range
+                if (dueRange) {
+                    const [start, end] = dueRange.split(" to ");
+                    if (!due) return false;
+                    if (start && due < start) return false;
+                    if (end && due > end) return false;
+                }
+
+                return true;
+            });
+
+            // Sort
+            filtered.sort((a, b) => {
+                switch (sort) {
+                    case "created-desc": return new Date(b.createdAt) - new Date(a.createdAt);
+                    case "created-asc": return new Date(a.createdAt) - new Date(b.createdAt);
+                    case "due-desc": return new Date(b.dueDate) - new Date(a.dueDate);
+                    case "due-asc": return new Date(a.dueDate) - new Date(b.dueDate);
+                    case "priority-desc": return getPriorityValue(b.priority) - getPriorityValue(a.priority);
+                    case "priority-asc": return getPriorityValue(a.priority) - getPriorityValue(b.priority);
+                    default: return 0;
+                }
+            });
+
+            renderTasks(filtered);
+        }
+
+        function getPriorityValue(p) {
+            return p === "high" ? 3 : p === "medium" ? 2 : 1;
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Load more handler
+            const loadMoreBtn = document.getElementById("load-more-tasks");
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener("click", () => {
+                    currentVisible += 10;
+                    filterTasks();
+                });
+            }
+
+            flatpickr("#created-date-range", { mode: "range", dateFormat: "Y-m-d" });
+            flatpickr("#due-date-range", { mode: "range", dateFormat: "Y-m-d" });
+
+            ["search-task", "status-filter", "created-date-range", "due-date-range", "sort-tasks"].forEach(id => {
+                document.getElementById(id)?.addEventListener("input", filterTasks);
+            });
+
+            filterTasks(); // Initial render
         });
-
-        filterTasks(); // Initial render
-    });
-    document.getElementById("clear-filters")?.addEventListener("click", () => {
-        document.getElementById("search-task").value = "";
-        document.getElementById("status-filter").value = "all";
-        document.getElementById("created-date-range").value = "";
-        document.getElementById("due-date-range").value = "";
-        document.getElementById("sort-tasks").value = "created-desc";
-        currentVisible = 5;
-        filterTasks();
-    });
+        document.getElementById("clear-filters")?.addEventListener("click", () => {
+            document.getElementById("search-task").value = "";
+            document.getElementById("status-filter").value = "all";
+            document.getElementById("created-date-range").value = "";
+            document.getElementById("due-date-range").value = "";
+            document.getElementById("sort-tasks").value = "created-desc";
+            currentVisible = 5;
+            filterTasks();
+        });
 </script>
 {% endblock %}

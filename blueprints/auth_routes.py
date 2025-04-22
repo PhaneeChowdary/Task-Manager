@@ -3,6 +3,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 import logging
 from repositories.user_repository import UserRepository
 from utils.auth_utils import login_required
+from firebase_admin import auth as admin_auth
+import json
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -11,26 +13,29 @@ auth_bp = Blueprint('auth', __name__)
 
 def init_auth_routes(db, firebase_auth):
     user_repo = UserRepository(db)
-    
+
     @auth_bp.route('/login', methods=['GET', 'POST'])
     def login():
         if request.method == 'POST':
             email = request.form['email']
             password = request.form['password']
             try:
-                # Use Firebase Admin SDK for authentication
                 user = user_repo.get_user_by_email(email)
                 if not user:
                     flash("Login failed: User not found", "danger")
                     return render_template('login.html')
 
+                # Fetch Firebase user to get custom claims
+                admin_user = admin_auth.get_user(user.uid)
+                is_admin = admin_user.custom_claims.get('is_admin') if admin_user.custom_claims else False
+
                 # Store user in session
                 session['user'] = {
                     'uid': user.uid,
                     'email': user.email,
-                    'displayName': user.display_name or user.email
+                    'displayName': user.display_name or user.email,
+                    'is_admin': is_admin
                 }
-                
                 logger.info(f"User {email} logged in successfully")
                 flash('Login successful!', "success")
                 return redirect(url_for('dashboard'))
@@ -38,7 +43,7 @@ def init_auth_routes(db, firebase_auth):
                 error_message = str(e)
                 logger.error(f"Login error: {error_message}", exc_info=True)
                 flash(f"Login failed: {error_message}", "danger")
-        
+
         return render_template('login.html')
 
     @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -47,32 +52,22 @@ def init_auth_routes(db, firebase_auth):
             email = request.form['email']
             password = request.form['password']
             try:
-                # Log registration attempt
                 logger.info(f"Attempting to register: {email}")
-                
-                # Create user
-                user = user_repo.create_user(
-                    email=email,
-                    password=password
-                )
-                
+                user = user_repo.create_user(email=email, password=password)
                 logger.info(f"User created with ID: {user.uid}")
-                
-                # Store in session
+
                 session['user'] = {
                     'uid': user.uid,
                     'email': email,
-                    'displayName': email.split('@')[0]
+                    'displayName': email.split('@')[0],
+                    'is_admin': False
                 }
-                
-                # Redirect to dashboard
                 return redirect(url_for('dashboard'))
-                
             except Exception as e:
                 error_message = str(e)
                 logger.error(f"Registration error: {error_message}", exc_info=True)
                 flash(f"Registration failed: {error_message}", "danger")
-        
+
         return render_template('register.html')
 
     @auth_bp.route('/google-login')
@@ -85,26 +80,23 @@ def init_auth_routes(db, firebase_auth):
         if not id_token:
             logger.warning("No idToken received in Google login request")
             return jsonify({'success': False, 'error': 'No ID token provided'})
-        
+
         try:
             logger.info(f"Processing Google login with token: {id_token[:10]}...")
-            
-            # Verify the ID token
-            decoded_token = auth.verify_id_token(id_token)
+            decoded_token = firebase_auth.verify_id_token(id_token)
             uid = decoded_token['uid']
-            
-            # Get user info
+
             user_record = user_repo.get_user_by_id(uid)
-            logger.info(f"Successfully authenticated user: {user_record.email}")
-            
-            # Store in session
+            admin_user = admin_auth.get_user(uid)
+            is_admin = admin_user.custom_claims.get('is_admin') if admin_user.custom_claims else False
+
             session['user'] = {
                 'uid': uid,
                 'email': user_record.email,
-                'displayName': user_record.display_name or user_record.email
+                'displayName': user_record.display_name or user_record.email,
+                'is_admin': is_admin
             }
             logger.debug(f"Session after login: {session}")
-            
             return jsonify({'success': True, 'redirect': url_for('dashboard')})
         except Exception as e:
             logger.error(f"Google login error: {str(e)}", exc_info=True)
@@ -138,25 +130,18 @@ def init_auth_routes(db, firebase_auth):
         user_id = session['user']['uid']
         user_email = session['user']['email']
 
-        # Get all boards where the user is a creator or member
         from repositories.board_repository import BoardRepository
         board_repo = BoardRepository(db)
-        
-        # This is a bit different from the original code structure
-        # but functionally equivalent
         user_boards = board_repo.get_user_boards(user_id)
         shared_boards = board_repo.get_shared_boards(user_id, user_email)
         all_boards = user_boards + shared_boards
 
-        # Get all tasks across all boards
         from repositories.task_repository import TaskRepository
         task_repo = TaskRepository(db)
-        
         all_tasks = []
         for board in all_boards:
             tasks = task_repo.get_board_tasks(board['id'])
             for task in tasks:
-                # Only count tasks created by or assigned to the current user
                 is_assigned = False
                 if 'assignedTo' in task:
                     if isinstance(task['assignedTo'], list):
@@ -166,13 +151,10 @@ def init_auth_routes(db, firebase_auth):
                                 break
                     elif task['assignedTo'] and task['assignedTo'].get('uid') == user_id:
                         is_assigned = True
-
                 if is_assigned or task.get('createdBy') == user_id:
                     task['boardId'] = board['id']
                     task['boardName'] = board['name']
                     all_tasks.append(task)
-
-        # Sort tasks by creation date
         all_tasks.sort(key=lambda x: x.get('createdAt', 0), reverse=True)
 
         return render_template(
@@ -188,7 +170,6 @@ def init_auth_routes(db, firebase_auth):
         uid = session['user']['uid']
         email = session['user']['email']
 
-        # Send export email before deleting data
         from utils.export_utils import export_and_email_user_data
         try:
             export_and_email_user_data(db, uid, email)
@@ -197,21 +178,17 @@ def init_auth_routes(db, firebase_auth):
             logger.error(f"Failed to send user data export email: {e}", exc_info=True)
 
         try:
-            # Delete from Firebase Auth
             user_repo.delete_user(uid)
             logger.info(f"Deleted user {email} from Firebase Auth")
         except Exception as e:
             logger.error(f"Error deleting user from Firebase Auth: {e}", exc_info=True)
 
-        # Delete all boards created by the user and their tasks
         from repositories.board_repository import BoardRepository
         board_repo = BoardRepository(db)
-        
         boards = board_repo.get_user_boards(uid)
         for board in boards:
             board_repo.delete_board(board['id'])
 
-        # Remove user from shared boards
         all_boards = db.collection('boards').stream()
         for board in all_boards:
             board_data = board.to_dict()
@@ -220,15 +197,13 @@ def init_auth_routes(db, firebase_auth):
             if len(users) != len(updated_users):
                 db.collection('boards').document(board.id).update({'users': updated_users})
 
-        # Delete activities
         activities = db.collection('activity').where('userId', '==', uid).stream()
         for activity in activities:
             activity.reference.delete()
 
-        # Clear session and logout
         session.clear()
         logger.info(f"User {email} deleted their account")
         flash("Your data is sent to your mail, account and all related data have been deleted.")
         return redirect(url_for('index'))
-        
+    
     return auth_bp

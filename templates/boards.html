@@ -76,7 +76,7 @@ System{% endblock %} {% block content %}
             <!-- Sort Select -->
             <div class="col-12 col-md-auto">
                 <select id="sort-boards" class="form-select">
-                    <option value="created-desc">Newest First</option>
+                    <option value="created-desc" selected>Newest First</option>
                     <option value="created-asc">Oldest First</option>
                     <option value="name-asc">Name (A-Z)</option>
                     <option value="name-desc">Name (Z-A)</option>
@@ -155,15 +155,19 @@ System{% endblock %} {% block content %}
             data-bs-toggle="modal"
             data-bs-target="#createBoardModal"
         >
-            Create Board
+            Create your first board
         </button>
     </div>
     {% endif %}
-</div>
 
-<div id="no-boards-message" class="text-center text-muted py-5 d-none">
-    <i class="bi bi-clipboard-x" style="font-size: 2rem"></i>
-    <p>No boards match the selected filters.</p>
+    <!-- Filtered Out Message -->
+    <div
+        id="no-filtered-boards-message"
+        class="text-center text-muted py-5 d-none"
+    >
+        <i class="bi bi-clipboard-x" style="font-size: 2rem"></i>
+        <p>No boards match the selected filters.</p>
+    </div>
 </div>
 
 <!-- Create Board Modal -->
@@ -325,9 +329,23 @@ System{% endblock %} {% block content %}
             if (shouldShow) visibleCount++;
         });
 
-        const noBoardsMsg = document.getElementById("no-boards-message");
-        if (noBoardsMsg) {
-            noBoardsMsg.classList.toggle("d-none", visibleCount > 0);
+        const noBoardsMessage = document.querySelector(
+            ".col-12.text-center.py-5"
+        );
+        const noFilteredMessage = document.getElementById(
+            "no-filtered-boards-message"
+        );
+        const totalBoards = boardCards.length;
+
+        if (totalBoards === 0) {
+            // No boards exist at all
+            if (noBoardsMessage) noBoardsMessage.classList.remove("d-none");
+            if (noFilteredMessage) noFilteredMessage.classList.add("d-none");
+        } else {
+            if (noBoardsMessage) noBoardsMessage.classList.add("d-none");
+            if (noFilteredMessage) {
+                noFilteredMessage.classList.toggle("d-none", visibleCount > 0);
+            }
         }
     }
 
@@ -361,9 +379,27 @@ System{% endblock %} {% block content %}
 
         if (clearBtn) {
             clearBtn.addEventListener("click", () => {
+                // Reset inputs
                 document.getElementById("search-board").value = "";
                 document.getElementById("created-date-filter").value = "";
-                filterBoards(); // Or filterSharedBoards() based on context
+
+                // Reset sort dropdown to default (Newest First)
+                const sortBoardsSelect = document.getElementById("sort-boards");
+                if (sortBoardsSelect) {
+                    sortBoardsSelect.value = "created-desc";
+                    sortBoards(); // Re-sort after resetting
+                }
+
+                // Clear flatpickr date range if used
+                const fp = document.getElementById(
+                    "created-date-filter"
+                )._flatpickr;
+                if (fp) {
+                    fp.clear();
+                }
+
+                // Re-filter boards
+                filterBoards();
             });
         }
 
