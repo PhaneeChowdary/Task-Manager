@@ -112,7 +112,7 @@ Here’s a quick visual overview of the application:
 
 -   Board details with filterable task lists
 
-    ![Dashboard View](/static/Screenshot.png)
+    ![Dashboard View](/static/Screenshot3.png)
 
 -   Modals for editing tasks and managing users
 
