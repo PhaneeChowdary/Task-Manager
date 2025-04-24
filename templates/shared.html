@@ -141,22 +141,25 @@ System{% endblock %} {% block content %}
     <div class="col-12 text-center py-5">
         <div
             id="no-boards-message"
-            class="{% if shared_boards|length > 0 %}d-none{% endif %} text-center py-4 text-muted"
+            class="{% if shared_boards|length > 0 %}d-none{% endif %} text-center text-muted"
         >
-            <i class="bi bi-clipboard-x" style="font-size: 2rem"></i>
+            <i
+                class="bi bi-clipboard-x"
+                style="font-size: 3rem; color: #ccc"
+            ></i>
             <h3>No Shared Boards</h3>
             <p class="text-muted">
                 Other users haven't shared any boards with you yet.
             </p>
+            <button
+                type="button"
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#createBoardModal"
+            >
+                Create your first shared board
+            </button>
         </div>
-        <button
-            type="button"
-            class="btn btn-primary"
-            data-bs-toggle="modal"
-            data-bs-target="#createBoardModal"
-        >
-            Create your first shared board
-        </button>
     </div>
     {% endif %}
 </div>
@@ -357,6 +360,7 @@ System{% endblock %} {% block content %}
 
         if (sortBoardsSelect) {
             sortBoardsSelect.addEventListener("change", sortBoards);
+            sortBoards();
         }
         if (searchInput) {
             searchInput.addEventListener("input", filterBoards);

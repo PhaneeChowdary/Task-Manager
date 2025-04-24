@@ -140,8 +140,11 @@ System{% endblock %} {% block content %}
         </div>
     </div>
     {% endfor %} {% else %}
-    <div class="col-12 text-center py-5">
-        <div class="mb-3">
+    <div class="col-12 text-center text-muted py-5">
+        <div
+            id="no-boards-message"
+            class="{% if shared_boards|length > 0 %}d-none{% endif %} text-center text-muted"
+        >
             <i
                 class="bi bi-clipboard-x"
                 style="font-size: 3rem; color: #ccc"
@@ -356,6 +359,7 @@ System{% endblock %} {% block content %}
 
         if (sortBoardsSelect) {
             sortBoardsSelect.addEventListener("change", sortBoards);
+            sortBoards();
         }
 
         if (searchInput) {

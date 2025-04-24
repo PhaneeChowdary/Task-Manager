@@ -9,6 +9,7 @@ from repositories.board_repository import BoardRepository
 from repositories.task_repository import TaskRepository
 from utils.activity_utils import add_activity
 from firebase_admin import firestore
+from utils.email_utils import build_email_body, send_email
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -77,36 +78,8 @@ def init_board_routes(db):
         # Get tasks for this board
         all_tasks = task_repo.get_board_tasks(board_id)
         
-        # Filter tasks based on user role and assignments
-        is_board_owner = user_role == 'owner'
-        
-        if is_board_owner:
-            # Board owners see all tasks
-            visible_tasks = all_tasks
-        else:
-            # Regular users only see tasks assigned to them
-            visible_tasks = []
-            for task in all_tasks:
-                # Check if user is assigned to this task
-                is_assigned = False
-                
-                # Handle different ways tasks might be assigned
-                assigned_to = task.get('assignedTo', [])
-                if isinstance(assigned_to, list):
-                    for assigned_user in assigned_to:
-                        if (assigned_user.get('uid') == current_user_id or 
-                            assigned_user.get('email') == current_user_email):
-                            is_assigned = True
-                            break
-                elif isinstance(assigned_to, dict):
-                    # Handle single assignment as dict case
-                    if (assigned_to.get('uid') == current_user_id or 
-                        assigned_to.get('email') == current_user_email):
-                        is_assigned = True
-                
-                # Include tasks assigned to the user
-                if is_assigned:
-                    visible_tasks.append(task)
+        # Everyone sees all tasks (no filtering)
+        visible_tasks = all_tasks
         
         # Get comments for each task
         for task in visible_tasks:
@@ -120,10 +93,12 @@ def init_board_routes(db):
                             user=session['user'], 
                             board=board_data, 
                             tasks=visible_tasks,
+                            all_tasks=all_tasks,
                             all_tasks_count=all_tasks_count,
                             visible_tasks_count=visible_tasks_count,
-                            is_owner=is_board_owner,
+                            is_owner=board_data['createdBy'] == current_user_id,
                             creator_status=creator_status)
+    
     
     @board_bp.route('/shared-board/<board_id>')
     @login_required
@@ -134,85 +109,51 @@ def init_board_routes(db):
         if not board_data:
             flash("Board not found", "danger")
             return redirect(url_for('dashboard'))
-        
+
         creator_id = board_data.get('createdBy')
         creator_name = board_data.get('creatorName', 'Unknown')
-        creator_status = "deleted"  # default
+        creator_status = "deleted"
 
-        # Check if creator is still in the board users list
+        # Check if creator is still listed
         for user in board_data.get('users', []):
             if user.get('uid') == creator_id:
                 creator_status = "active"
                 break
 
-
-        # Check if user is part of this board
+        # Check if current user is part of the board
         current_user_id = session['user']['uid']
         current_user_email = session['user']['email']
-        user_in_board = False
-        user_role = None
-        
-        for user in board_data.get('users', []):
-            if user.get('uid') == current_user_id or user.get('email') == current_user_email:
-                user_in_board = True
-                user_role = user.get('role')
-                break
-        
+        user_in_board = any(
+            user.get('uid') == current_user_id or user.get('email') == current_user_email
+            for user in board_data.get('users', [])
+        )
+
         if not user_in_board:
             flash("You do not have access to this board", "danger")
             return redirect(url_for('dashboard'))
-        
-        # Get tasks for this board
+
+        # Fetch ALL tasks (no filters anymore)
         all_tasks = task_repo.get_board_tasks(board_id)
-        
-        # Filter tasks based on user role and assignments
-        is_board_owner = user_role == 'owner'
-        
-        if is_board_owner:
-            # Board owners see all tasks
-            visible_tasks = all_tasks
-        else:
-            # Regular users only see tasks assigned to them
-            visible_tasks = []
-            for task in all_tasks:
-                # Check if user is assigned to this task
-                is_assigned = False
-                
-                # Handle different ways tasks might be assigned
-                assigned_to = task.get('assignedTo', [])
-                if isinstance(assigned_to, list):
-                    for assigned_user in assigned_to:
-                        if (assigned_user.get('uid') == current_user_id or 
-                            assigned_user.get('email') == current_user_email):
-                            is_assigned = True
-                            break
-                elif isinstance(assigned_to, dict):
-                    # Handle single assignment as dict case
-                    if (assigned_to.get('uid') == current_user_id or 
-                        assigned_to.get('email') == current_user_email):
-                        is_assigned = True
-                
-                # Include tasks assigned to the user
-                if is_assigned:
-                    visible_tasks.append(task)
-        
-        # Get comments for each task
+        visible_tasks = all_tasks  # Everyone sees everything
+
+        # Add comments to each task
         for task in visible_tasks:
             task['comments'] = task_repo.get_task_comments(board_id, task['id'])
-        
-        # Calculate stats
+
         all_tasks_count = len(all_tasks)
         visible_tasks_count = len(visible_tasks)
-        
-        return render_template('shared_board.html', 
-                            user=session['user'], 
-                            board=board_data, 
-                            tasks=visible_tasks,
-                            all_tasks_count=all_tasks_count,
-                            visible_tasks_count=visible_tasks_count,
-                            is_owner=board_data['createdBy'] == session['user']['uid'],
-                            creator_name=creator_name,
-                            creator_status=creator_status)
+
+        return render_template(
+            'shared_board.html',
+            user=session['user'],
+            board=board_data,
+            tasks=visible_tasks,
+            all_tasks_count=all_tasks_count,
+            visible_tasks_count=visible_tasks_count,
+            is_owner=board_data['createdBy'] == current_user_id,
+            creator_name=creator_name,
+            creator_status=creator_status
+        )
 
 
     @board_bp.route('/create-board', methods=['POST'])
@@ -326,6 +267,10 @@ def init_board_routes(db):
                 )
                 
                 flash(f"User {email} has been added to the board", "success")
+                board_link = url_for('board.shared_board', board_id=board_id, _external=True)
+                subject = "You have been added to a board"
+                body = build_email_body(email, "board", board_link)
+                send_email(email, subject, body)
             else:
                 flash(f"User with email {email} does not exist in the system", "danger")
 
@@ -378,6 +323,11 @@ def init_board_routes(db):
             board_id,
             board_data['name']
         )
+
+        if user_found.get('email'):
+            subject = f"You have been removed from the board {board_data['name']}"
+            body = build_email_body(user_found['email'], "removed", link=None, context_name=board_data['name'])
+            send_email(user_found['email'], subject, body)
         
         flash(f"User {user_found.get('email')} has been removed from the board", "warning")
         return redirect(url_for('board.board', board_id=board_id))
@@ -477,21 +427,31 @@ def init_board_routes(db):
     def leave_board(board_id):
         board_data = board_repo.get_board(board_id)
         current_uid = session['user']['uid']
+        current_email = session['user']['email']
 
         if not board_data:
             flash("Board not found", "danger")
             return redirect(url_for('dashboard'))
-
-        # If owner is leaving, delete the board and notify
-        if board_data['createdBy'] == current_uid:
+        
+        is_owner = board_data.get('createdBy') == current_uid
+        if is_owner:
             board_repo.delete_board(board_id)
             flash("You were the owner. Board and all members were removed.", "warning")
             return redirect(url_for('dashboard'))
 
-        # Otherwise, remove the user
-        board_repo.remove_user_from_board(board_id, current_uid)
-        flash("You have left the board.", "warning")
+        # Remove user from board (match by uid or email)
+        users = board_data.get('users', [])
+        updated_users = [user for user in users if user.get('uid') != current_uid and user.get('email') != current_email]
+
+        # Only update if there's a change
+        if len(updated_users) != len(users):
+            db.collection('boards').document(board_id).update({'users': updated_users})
+            flash("You have left the board.", "warning")
+        else:
+            flash("You are not a member of this board.", "danger")
+
         return redirect(url_for('board.shared_boards'))
+
     
     @board_bp.route('/edit-board/<board_id>', methods=['POST'])
     @login_required
@@ -521,8 +481,6 @@ def init_board_routes(db):
             return redirect(url_for('board.board', board_id=board_id))
         else:
             return redirect(url_for('board.shared_board', board_id=board_id))
-
-
 
     def generate_board_csv_response(boards, filename='boards.csv'):
         output = StringIO()

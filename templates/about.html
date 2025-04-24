@@ -1,0 +1,201 @@
+{% extends "layout.html" %} {% block title %}About - Task Management System{%
+endblock %} {% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card card-fancy mb-4">
+                <div class="card-body">
+                    <h2 class="card-title">Welcome to Task Board</h2>
+                    <p>
+                        A collaborative task management system designed to help
+                        teams organize, track, and complete tasks efficiently.
+                    </p>
+
+                    <p>
+                        A <strong>board</strong> is the core organizational unit
+                        in Task Board. Think of it as a dedicated workspace for
+                        a project, team, or area of responsibility:
+                    </p>
+
+                    <p>
+                        Task Board provides a simple yet powerful interface to
+                        manage tasks across different projects. Whether you are
+                        working solo or with a team, our platform helps you stay
+                        organized and focused on what matters most.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card card-fancy mb-4">
+                <div class="card-body">
+                    <h3 class="card-title">
+                        <i class="bi bi-kanban me-2"></i>Key Features
+                    </h3>
+                    <div class="row mt-4">
+                        <div class="col-md-6 mb-4">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i
+                                        class="bi bi-clipboard-check"
+                                        style="font-size: 2rem"
+                                    ></i>
+                                </div>
+                                <div>
+                                    <h4>Board Management</h4>
+                                    <p>
+                                        Create and manage multiple boards for
+                                        different projects or teams. Keep your
+                                        tasks organized by context.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i
+                                        class="bi bi-people"
+                                        style="font-size: 2rem"
+                                    ></i>
+                                </div>
+                                <div>
+                                    <h4>Collaboration</h4>
+                                    <p>
+                                        Invite team members to your boards and
+                                        assign them tasks. Work together
+                                        seamlessly on shared projects.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i
+                                        class="bi bi-flag"
+                                        style="font-size: 2rem"
+                                    ></i>
+                                </div>
+                                <div>
+                                    <h4>Task Prioritization</h4>
+                                    <p>
+                                        Set priorities for tasks (low, medium,
+                                        high) to ensure the most important work
+                                        gets done first.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i
+                                        class="bi bi-calendar-date"
+                                        style="font-size: 2rem"
+                                    ></i>
+                                </div>
+                                <div>
+                                    <h4>Due Dates</h4>
+                                    <p>
+                                        Set deadlines for tasks and get visual
+                                        indicators when due dates are
+                                        approaching.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i
+                                        class="bi bi-chat-dots"
+                                        style="font-size: 2rem"
+                                    ></i>
+                                </div>
+                                <div>
+                                    <h4>Task Comments</h4>
+                                    <p>
+                                        Discuss tasks right where the work
+                                        happens with our built-in comment
+                                        system.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i
+                                        class="bi bi-filter-circle"
+                                        style="font-size: 2rem"
+                                    ></i>
+                                </div>
+                                <div>
+                                    <h4>Advanced Filtering</h4>
+                                    <p>
+                                        Filter tasks by status, assignee,
+                                        priority, and more to find what you are
+                                        looking for quickly.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-fancy mb-4">
+                <div class="card-body">
+                    <h3 class="card-title">
+                        <i class="bi bi-play-circle me-2"></i>Getting Started
+                    </h3>
+
+                    <div class="mt-4">
+                        <h5><strong>1. Create an account</strong></h5>
+                        <p>
+                            Sign up with your email address to create a new
+                            account or login if you already have one.
+                        </p>
+
+                        <h5><strong>2. Create your first board</strong></h5>
+                        <p>
+                            From the dashboard, click on
+                            <strong>New Board</strong> and give it a name and
+                            description.
+                        </p>
+
+                        <h5><strong>3. Add tasks</strong></h5>
+                        <p>
+                            Click on <strong>Add Task</strong> to create your
+                            first task. Assign it to yourself or team members,
+                            set priorities, and due dates.
+                        </p>
+
+                        <h5><strong>4. Invite collaborators</strong></h5>
+                        <p>
+                            Share your board with team members by entering their
+                            email addresses in the
+                            <strong>Invite</strong> section.
+                        </p>
+
+                        <h5><strong>5. Track progress</strong></h5>
+                        <p>
+                            As tasks are completed, mark them as done to keep
+                            track of your progress and see what is left to do.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-5">
+                <a
+                    href="{{ url_for('dashboard') }}"
+                    class="btn btn-primary btn-lg"
+                >
+                    <i class="bi bi-arrow-right-circle me-2"></i>Go to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

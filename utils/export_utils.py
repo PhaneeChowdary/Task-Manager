@@ -2,6 +2,8 @@
 import os
 import csv
 import smtplib
+from datetime import datetime
+from pathlib import Path
 import zipfile
 import tempfile
 from email import encoders
@@ -9,9 +11,87 @@ from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import logging
+import json
+
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
+def export_user_data(db, uid: str, email: str) -> str:
+    export_dir = Path("exports") / uid
+    export_dir.mkdir(parents=True, exist_ok=True)
+
+    # Export boards owned by user
+    boards_data = []
+    boards_ref = db.collection("boards").where("createdBy", "==", uid).stream()
+    for board in boards_ref:
+        board_dict = board.to_dict()
+        board_dict["id"] = board.id
+        
+        # Convert any DatetimeWithNanoseconds objects
+        for key, value in board_dict.items():
+            if hasattr(value, 'timestamp'):  # Check if it's a Firestore timestamp
+                board_dict[key] = value.isoformat() if hasattr(value, 'isoformat') else str(value)
+                
+        boards_data.append(board_dict)
+    with open(export_dir / "boards.json", "w") as f:
+        json.dump(boards_data, f, indent=2)
+
+    # Export tasks assigned or created by user
+    tasks_data = []
+    all_boards = db.collection("boards").stream()
+    for board in all_boards:
+        board_dict = board.to_dict()
+        board_id = board.id
+        task_ref = db.collection("boards").document(board_id).collection("tasks").stream()
+        for task in task_ref:
+            task_data = task.to_dict()
+            if (
+                task_data.get("createdBy") == uid or
+                any(u.get("uid") == uid for u in task_data.get("assignedTo", []))
+            ):
+                task_data["boardId"] = board_id
+                task_data["id"] = task.id
+                
+                # Convert any DatetimeWithNanoseconds objects
+                for key, value in task_data.items():
+                    if hasattr(value, 'timestamp'):  # Check if it's a Firestore timestamp
+                        task_data[key] = value.isoformat() if hasattr(value, 'isoformat') else str(value)
+                
+                tasks_data.append(task_data)
+    with open(export_dir / "tasks.json", "w") as f:
+        json.dump(tasks_data, f, indent=2)
+
+    # Export activity logs
+    activities_data = []
+    activities = db.collection("activity").where("userId", "==", uid).stream()
+    for activity in activities:
+        activity_data = activity.to_dict()
+        activity_data["id"] = activity.id
+        
+        # Convert any DatetimeWithNanoseconds objects
+        for key, value in activity_data.items():
+            if hasattr(value, 'timestamp'):  # Check if it's a Firestore timestamp
+                activity_data[key] = value.isoformat() if hasattr(value, 'isoformat') else str(value)
+        
+        activities_data.append(activity_data)
+    with open(export_dir / "activities.json", "w") as f:
+        json.dump(activities_data, f, indent=2)
+
+    # Create ZIP
+    zip_filename = f"{uid}_export_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.zip"
+    zip_path = Path("exports") / zip_filename
+    with zipfile.ZipFile(zip_path, "w") as zipf:
+        for file in export_dir.iterdir():
+            zipf.write(file, arcname=file.name)
+
+    # Clean up JSON files after zipping
+    for file in export_dir.iterdir():
+        file.unlink()
+    export_dir.rmdir()
+
+    return str(zip_path)
+
 
 def export_and_email_user_data(db, user_id, user_email):
     """

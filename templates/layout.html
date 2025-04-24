@@ -69,6 +69,13 @@
                                 >Shared Boards</a
                             >
                         </li>
+                        <li class="nav-item">
+                            <a
+                                class="nav-link {% if request.path == url_for('about') %}active{% endif %}"
+                                href="{{ url_for('about') }}"
+                                >About</a
+                            >
+                        </li>
                     </ul>
                     <div class="ms-auto">
                         {% if user %}

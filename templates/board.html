@@ -96,7 +96,7 @@ System{% endblock %} {% block content %}
 
 <!-- Task Management -->
 <div class="row mb-4">
-    <div class="col-12">
+    <div class="col-12 mb-4">
         <div class="card card-fancy">
             <div class="card-body">
                 <div
@@ -265,7 +265,7 @@ System{% endblock %} {% block content %}
                                         class="dropdown-item created-by-filter"
                                         data-value="{{ user.uid }}"
                                         href="#"
-                                        >Assigned to me</a
+                                        >Me</a
                                     >
                                 </li>
                                 {% for board_user in board.users %} {% if
@@ -586,7 +586,20 @@ System{% endblock %} {% block content %}
                             </div>
                         </div>
                     </div>
-                    {% endfor %} {% else %}
+                    {% endfor %}
+                    <div
+                        id="no-tasks-message"
+                        class="text-center text-muted py-4 d-none"
+                    >
+                        <i class="bi bi-list-task" style="font-size: 2rem"></i>
+                        <p>No tasks match the selected filters.</p>
+                    </div>
+                    {% elif all_tasks %}
+                    <div class="text-center text-muted py-4 d-none">
+                        <i class="bi bi-list-task" style="font-size: 2rem"></i>
+                        <p>No tasks match the selected filters.</p>
+                    </div>
+                    {% else %}
                     <div class="text-center py-4 text-muted">
                         <i
                             class="bi bi-clipboard-x"
@@ -602,13 +615,6 @@ System{% endblock %} {% block content %}
                         </button>
                     </div>
                     {% endif %}
-                </div>
-                <div
-                    id="no-tasks-message"
-                    class="text-center text-muted py-4 d-none"
-                >
-                    <i class="bi bi-list-task" style="font-size: 2rem"></i>
-                    <p>No tasks match the selected filters.</p>
                 </div>
             </div>
         </div>
@@ -653,7 +659,7 @@ System{% endblock %} {% block content %}
 <!-- Modals -->
 <!-- Add Task Modal -->
 <div class="modal fade" id="addTaskModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Add New Task</h5>
@@ -757,7 +763,7 @@ System{% endblock %} {% block content %}
 
 <!-- Edit Task Modal -->
 <div class="modal fade" id="editTaskModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Edit Task</h5>
@@ -899,7 +905,7 @@ System{% endblock %} {% block content %}
 </div>
 <!-- Manage Users Modal -->
 <div class="modal fade" id="manageUsersModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Manage Board Members</h5>
@@ -981,7 +987,7 @@ System{% endblock %} {% block content %}
 
 <!-- Confirm Delete Board Modal -->
 <div class="modal fade" id="confirmDeleteBoardModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Confirm Deletion</h5>
@@ -1025,7 +1031,7 @@ System{% endblock %} {% block content %}
 
 <!-- Confirm Task Modal -->
 <div class="modal fade" id="confirmDeleteTaskModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form id="delete-task-form-modal" method="post">
                 <div class="modal-header">
@@ -1062,7 +1068,7 @@ System{% endblock %} {% block content %}
 
 <!-- Confirm Remove User Modal -->
 <div class="modal fade" id="confirmRemoveUserModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form id="remove-user-form" method="post">
                 <div class="modal-header">
@@ -1100,46 +1106,51 @@ System{% endblock %} {% block content %}
 
 <!-- Edit Board Modal -->
 <div class="modal fade" id="editBoardModal" tabindex="-1">
-    <div class="modal-dialog">
-        <form
-            method="POST"
-            action="{{ url_for('board.edit_board', board_id=board.id) }}"
-        >
-            <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form
+                method="POST"
+                action="{{ url_for('board.edit_board', board_id=board.id) }}"
+            >
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Board</h5>
                     <button
                         type="button"
                         class="btn-close"
                         data-bs-dismiss="modal"
+                        aria-label="Close"
                     ></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Board Name</label>
+                        <label for="edit-board-name" class="form-label"
+                            >Board Name</label
+                        >
                         <input
                             type="text"
                             class="form-control"
+                            id="edit-board-name"
                             name="name"
                             value="{{ board.name }}"
                             required
                         />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Description</label>
+                        <label for="edit-board-description" class="form-label"
+                            >Description</label
+                        >
                         <textarea
                             class="form-control"
+                            id="edit-board-description"
                             name="description"
-                            rows="3"
+                            rows="4"
+                            placeholder="Enter a brief description"
                         >
 {{ board.description }}</textarea
                         >
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">
-                        Save Changes
-                    </button>
+                <div class="modal-footer d-flex justify-content-between">
                     <button
                         type="button"
                         class="btn btn-secondary"
@@ -1147,9 +1158,12 @@ System{% endblock %} {% block content %}
                     >
                         Cancel
                     </button>
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                    </button>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -1468,7 +1482,6 @@ System{% endblock %} {% block content %}
             });
         });
 
-        // Mobile-friendly members view with modal
         const memberIcons = document.querySelectorAll('.task-members-info');
         memberIcons.forEach(icon => {
             icon.addEventListener('click', function(e) {
@@ -1537,7 +1550,7 @@ System{% endblock %} {% block content %}
             item.addEventListener('click', function (e) {
                 e.preventDefault();
                 const value = this.getAttribute('data-value');
-                assignedDropdownBtn.textContent = `${this.textContent}`;
+                assignedDropdownBtn.textContent = `Assigned to: ${this.textContent}`;
                 currentAssignedFilter = value;
                 applyFilters();
             });
@@ -1591,7 +1604,6 @@ System{% endblock %} {% block content %}
                 document.querySelectorAll('.sort-option').forEach(item => {item.classList.remove('active');});
                 document.getElementById('sortTasksDropdown').textContent = 'Newest First';
 
-                // Highlight the default sort visually
                 document.querySelectorAll('.sort-option').forEach(item => {
                     item.classList.remove('active');
                 });

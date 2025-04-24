@@ -81,7 +81,7 @@ System{% endblock %} {% block content %}
 
 <!-- Task Management -->
 <div class="row mb-4">
-    <div class="col-12">
+    <div class="col-12 mb-4">
         <div class="card card-fancy">
             <div class="card-body">
                 <div
@@ -101,15 +101,6 @@ System{% endblock %} {% block content %}
                         <i class="bi bi-plus"></i> Add Task
                     </button>
                 </div>
-
-                {% if board.createdBy != user.uid and visible_tasks_count <
-                all_tasks_count %}
-                <div class="alert alert-dark" role="alert">
-                    <i class="bi bi-info-circle"></i> You are viewing only tasks
-                    assigned to you. (You are assigned {{ visible_tasks_count }}
-                    of {{ all_tasks_count }} total tasks on this board)
-                </div>
-                {% endif %}
 
                 <!-- Task Filters -->
                 <div class="row g-2 align-items-center mb-3">
@@ -174,6 +165,58 @@ System{% endblock %} {% block content %}
                             class="form-control"
                             placeholder="Created date or range"
                         />
+                    </div>
+
+                    <!-- Assigned To Dropdown -->
+                    <div class="col-12 col-md-auto">
+                        <div class="dropdown">
+                            <button
+                                class="btn btn-outline-secondary dropdown-toggle"
+                                type="button"
+                                id="assignedFilterDropdown"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                            >
+                                Assigned to
+                            </button>
+                            <ul
+                                class="dropdown-menu"
+                                aria-labelledby="assignedFilterDropdown"
+                                id="assigned-filter-dropdown"
+                            >
+                                <li>
+                                    <a
+                                        class="dropdown-item assigned-filter"
+                                        data-value="all"
+                                        href="#"
+                                        >All Users</a
+                                    >
+                                </li>
+                                <div class="dropdown-divider"></div>
+                                <li>
+                                    <a
+                                        class="dropdown-item assigned-filter"
+                                        data-value="me"
+                                        href="#"
+                                        >Me</a
+                                    >
+                                </li>
+                                {% for board_user in board.users %} {% if
+                                board_user.uid != user.uid %}
+                                <div class="dropdown-divider"></div>
+                                <li>
+                                    <a
+                                        class="dropdown-item assigned-filter"
+                                        data-value="{{ board_user.uid }}"
+                                        href="#"
+                                    >
+                                        {{ board_user.displayName or
+                                        board_user.email }}
+                                    </a>
+                                </li>
+                                {% endif %} {% endfor %}
+                            </ul>
+                        </div>
                     </div>
 
                     <!-- Created By Dropdown -->
@@ -396,7 +439,7 @@ System{% endblock %} {% block content %}
                                 </button>
                                 {% endif %}
                                 <form
-                                    action="{{ url_for('toggle_task', board_id=board.id, task_id=task.id) }}"
+                                    action="{{ url_for('task.shared_toggle_task', board_id=board.id, task_id=task.id) }}"
                                     method="post"
                                     class="d-inline"
                                 >
@@ -506,7 +549,7 @@ System{% endblock %} {% block content %}
 
                                 <!-- Add comment form -->
                                 <form
-                                    action="{{ url_for('add_comment', board_id=board.id, task_id=task.id) }}"
+                                    action="{{ url_for('task.shared_add_comment', board_id=board.id, task_id=task.id) }}"
                                     method="post"
                                 >
                                     <div class="input-group">
@@ -528,7 +571,20 @@ System{% endblock %} {% block content %}
                             </div>
                         </div>
                     </div>
-                    {% endfor %} {% else %}
+                    {% endfor %}
+                    <div
+                        id="no-tasks-message"
+                        class="text-center text-muted py-4 d-none"
+                    >
+                        <i class="bi bi-list-task" style="font-size: 2rem"></i>
+                        <p>No tasks match the selected filters.</p>
+                    </div>
+                    {% elif all_tasks %}
+                    <div class="text-center text-muted py-4 d-none">
+                        <i class="bi bi-list-task" style="font-size: 2rem"></i>
+                        <p>No tasks match the selected filters.</p>
+                    </div>
+                    {% else %}
                     <div class="text-center py-4 text-muted">
                         <i
                             class="bi bi-clipboard-x"
@@ -544,13 +600,6 @@ System{% endblock %} {% block content %}
                         </button>
                     </div>
                     {% endif %}
-                </div>
-                <div
-                    id="no-tasks-message"
-                    class="text-center text-muted py-4 d-none"
-                >
-                    <i class="bi bi-list-task" style="font-size: 2rem"></i>
-                    <p>No tasks match the selected filters.</p>
                 </div>
             </div>
         </div>
@@ -591,7 +640,7 @@ System{% endblock %} {% block content %}
     </button>
     {% endif %} {% if not is_owner %}
     <button
-        class="btn btn-sm btn-primary"
+        class="btn btn-primary"
         data-bs-toggle="modal"
         data-bs-target="#confirmLeaveBoardModal"
         data-board-id="{{ board.id }}"
@@ -605,7 +654,7 @@ System{% endblock %} {% block content %}
 <!-- Modals -->
 <!-- Add Task Modal -->
 <div class="modal fade" id="addTaskModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Add New Task</h5>
@@ -617,7 +666,7 @@ System{% endblock %} {% block content %}
                 ></button>
             </div>
             <form
-                action="{{ url_for('add_task', board_id=board.id) }}"
+                action="{{ url_for('task.shared_add_task', board_id=board.id) }}"
                 method="post"
             >
                 <div class="modal-body">
@@ -708,7 +757,7 @@ System{% endblock %} {% block content %}
 
 <!-- Edit Task Modal -->
 <div class="modal fade" id="editTaskModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Edit Task</h5>
@@ -722,7 +771,7 @@ System{% endblock %} {% block content %}
             <div class="modal-body">
                 <form
                     id="edit-task-form"
-                    action="{{ url_for('update_task', board_id=board.id, task_id='TASK_ID') }}"
+                    action="{{ url_for('task.shared_update_task', board_id=board.id, task_id='TASK_ID') }}"
                     method="post"
                 >
                     <input type="hidden" id="edit-task-id" name="task_id" />
@@ -818,10 +867,9 @@ System{% endblock %} {% block content %}
                     }
                 </style>
                 <div class="modal-footer no-border-footer">
-                    <!-- Form for task deletion -->
                     <form
                         id="delete-task-form"
-                        action="{{ url_for('delete_task', board_id=board.id, task_id='TASK_ID') }}"
+                        action="{{ url_for('task.shared_delete_task', board_id=board.id, task_id='TASK_ID') }}"
                         method="post"
                         class="d-inline me-auto"
                     >
@@ -851,7 +899,7 @@ System{% endblock %} {% block content %}
 
 <!-- Confirm Delete Board Modal -->
 <div class="modal fade" id="confirmDeleteBoardModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Confirm Deletion</h5>
@@ -895,7 +943,7 @@ System{% endblock %} {% block content %}
 
 <!-- Confirm Task Modal -->
 <div class="modal fade" id="confirmDeleteTaskModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form id="delete-task-form-modal" method="post">
                 <div class="modal-header">
@@ -932,7 +980,7 @@ System{% endblock %} {% block content %}
 
 <!-- Confirm Remove User Modal -->
 <div class="modal fade" id="confirmRemoveUserModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form id="remove-user-form" method="post">
                 <div class="modal-header">
@@ -1045,6 +1093,10 @@ System{% endblock %} {% block content %}
 <script>
     let currentSort = 'created-desc';
     let currentCreatedByFilter = 'all';
+    let currentAssignedFilter = 'all';
+
+    // Pass tasks data as JSON so JavaScript can access it and log it
+    const tasksData = {{ tasks|tojson|safe }};
 
     const confirmModal = document.getElementById('confirmLeaveBoardModal');
     confirmModal.addEventListener('show.bs.modal', function (event) {
@@ -1055,9 +1107,6 @@ System{% endblock %} {% block content %}
         document.getElementById('boardNameText').textContent = boardName;
         document.getElementById('leaveBoardForm').action = `/leave-board/${boardId}`;
     });
-
-    // Pass tasks data as JSON so JavaScript can access it and log it
-    const tasksData = {{ tasks|tojson|safe }};
 
     document.getElementById('cancel-edit-button').addEventListener('click', function() {
         // Remove modal backdrop manually
@@ -1075,7 +1124,6 @@ System{% endblock %} {% block content %}
     const createdDateFilter = document.getElementById('created-date-filter');
     const taskItems = document.querySelectorAll('.task-item');
     let currentFilter = 'all';
-    let currentAssignedFilter = 'all';
 
     // Apply filters
     filterButtons.forEach(button => {
@@ -1329,7 +1377,7 @@ System{% endblock %} {% block content %}
     // Setup dynamic delete form for confirmation modal
     document.getElementById('delete-task-btn').onclick = function () {
         const deleteForm = document.getElementById('delete-task-form-modal');
-        deleteForm.action = `/delete-task/{{ board.id }}/${taskId}`;
+        deleteForm.action = "{{ url_for('task.shared_delete_task', board_id=board.id, task_id='PLACEHOLDER') }}".replace('PLACEHOLDER', taskId);
     };
 
     const modal = new bootstrap.Modal(document.getElementById('editTaskModal'));
@@ -1353,6 +1401,8 @@ System{% endblock %} {% block content %}
     });
 
     document.addEventListener('DOMContentLoaded', function () {
+
+        document.getElementById('sortTasksDropdown').textContent = 'Newest First';
 
         // Initialize tooltips
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -1426,12 +1476,12 @@ System{% endblock %} {% block content %}
         const assignedDropdownBtn = document.getElementById('assignedFilterDropdown');
         const sortDropdownBtn = document.getElementById('sortTasksDropdown');
 
-        // Assigned user filter
+        // Assigned filter
         document.querySelectorAll('.assigned-filter').forEach(item => {
             item.addEventListener('click', function (e) {
                 e.preventDefault();
                 const value = this.getAttribute('data-value');
-                assignedDropdownBtn.textContent = `${this.textContent}`;
+                assignedDropdownBtn.textContent = `Assigned to: ${this.textContent.trim()}`;
                 currentAssignedFilter = value;
                 applyFilters();
             });
@@ -1449,29 +1499,12 @@ System{% endblock %} {% block content %}
             });
         });
 
-        // Filter task by created date/range
-        flatpickr("#created-date-filter", {
-            mode: "range", dateFormat: "Y-m-d", allowInput: true,
-            onChange: function () {
-                applyFilters();
-            }
-        });
         const createdDateInput = document.getElementById("created-date-filter");
-        if (createdDateInput) {
-            createdDateInput.addEventListener("change", applyFilters);
-        }
-
-        // Filter task by due date/range
-        flatpickr("#due-date-filter", {
-            mode: "range", dateFormat: "Y-m-d", allowInput: true,
-            onChange: function () {
-                applyFilters();
-            }
-        });
         const dueDateFilterInput = document.getElementById('due-date-filter');
-        if (dueDateFilterInput) {
-            dueDateFilterInput.addEventListener('change', applyFilters);
-        }
+
+        if (createdDateInput) {createdDateInput.addEventListener("change", applyFilters);}
+        if (dueDateFilterInput) {dueDateFilterInput.addEventListener('change', applyFilters);}
+
 
         // Created by filter
         const createdByDropdownBtn = document.getElementById('createdByFilterDropdown');
@@ -1494,16 +1527,21 @@ System{% endblock %} {% block content %}
                 });
                 document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
                 currentFilter = 'all';
-
                 currentAssignedFilter = 'all';
-                document.getElementById('assignedFilterDropdown').textContent = 'All Users';
-
+                currentCreatedByFilter = 'all';
                 currentSort = 'created-desc';
+
+                document.getElementById('assignedFilterDropdown').textContent = 'Assigned to';
+                document.querySelectorAll('.sort-option').forEach(item => {item.classList.remove('active');});
                 document.getElementById('sortTasksDropdown').textContent = 'Newest First';
 
-                currentCreatedByFilter = 'all';
-                document.getElementById('createdByFilterDropdown').textContent = 'Created by';
+                document.querySelectorAll('.sort-option').forEach(item => {
+                    item.classList.remove('active');
+                });
+                const defaultSortOption = document.querySelector('.sort-option[data-value="created-desc"]');
+                if (defaultSortOption) {defaultSortOption.classList.add('active');}
 
+                document.getElementById('createdByFilterDropdown').textContent = 'Created by';
                 document.getElementById('task-search').value = '';
                 document.getElementById('created-date-filter')?._flatpickr?.clear();
                 document.getElementById('due-date-filter')?._flatpickr?.clear();
@@ -1513,5 +1551,12 @@ System{% endblock %} {% block content %}
             });
         }
     });
+
+    // Due date for task
+    flatpickr("#due_date", {dateFormat: "Y-m-d", altInput: true, altFormat: "F j, Y", allowInput: true});
+    // Filter task by created date/range
+    flatpickr("#created-date-filter", {mode: "range", dateFormat: "Y-m-d", allowInput: true, onChange: function () {applyFilters();}});
+    // Filter task by due date/range
+    flatpickr("#due-date-filter", {mode: "range", dateFormat: "Y-m-d", allowInput: true, onChange: function () {applyFilters();}});
 </script>
 {% endblock %}

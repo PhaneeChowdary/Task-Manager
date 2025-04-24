@@ -253,6 +253,16 @@ def index():
         logger.error(f"Error in index route: {str(e)}", exc_info=True)
         return render_template('error.html', error=str(e)), 500
 
+# Add this with your other main routes
+@app.route('/about')
+def about():
+    try:
+        return render_template('about.html', 
+                              user=session.get('user'))
+    except Exception as e:
+        logger.error(f"Error in about route: {str(e)}", exc_info=True)
+        return render_template('error.html', error=str(e)), 500
+
 # Dashboard route
 @app.route('/dashboard')
 def dashboard():
